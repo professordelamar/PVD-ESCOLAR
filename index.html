@@ -283,7 +283,7 @@
 
             <!-- Carrinho e Pagamento -->
             <div class="col-span-12 lg:col-span-5 xl:col-span-4 flex flex-col h-full bg-white shadow-lg">
-                <div class="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                <div class="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
                     <div class="flex items-center space-x-2">
                         <i data-lucide="shopping-bag" class="w-5 h-5 text-blue-600"></i>
                         <h2 class="font-bold text-slate-800 text-lg">Itens do Pedido</h2>
@@ -295,88 +295,74 @@
                     </button>
                 </div>
 
-                <div id="cart-items-container" class="flex-1 overflow-y-auto p-4 divide-y divide-slate-100"></div>
+                <div id="cart-items-container" class="flex-1 overflow-y-auto p-4 divide-y divide-slate-100 min-h-[120px]"></div>
 
-                <div class="p-4 border-t border-slate-200 bg-slate-50 space-y-4">
-                    <div class="bg-slate-900 text-white p-4 rounded-xl flex justify-between items-center shadow-inner">
+                <div class="p-4 border-t border-slate-200 bg-slate-50 space-y-3 overflow-y-auto max-h-[50vh] shrink-0">
+                    <div class="bg-slate-900 text-white p-3 rounded-xl flex justify-between items-center shadow-inner">
                         <div>
                             <span class="text-xs text-slate-400 font-medium uppercase tracking-wider block">Total a Pagar</span>
                             <span id="cart-items-count" class="text-xs text-blue-400 font-semibold">0 itens no carrinho</span>
                         </div>
                         <div class="text-right">
-                            <span id="cart-total-price" class="text-3xl font-extrabold text-emerald-400">R$ 0,00</span>
+                            <span id="cart-total-price" class="text-2xl font-extrabold text-emerald-400">R$ 0,00</span>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Forma de Pagamento</label>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Forma de Pagamento</label>
                         <div class="grid grid-cols-4 gap-2">
-                            <button onclick="setPaymentMethod('pix')" id="pay-btn-pix" class="payment-btn p-2.5 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
-                                <i data-lucide="qr-code" class="w-5 h-5 mb-1 text-emerald-600"></i><span>PIX</span>
+                            <button onclick="setPaymentMethod('pix')" id="pay-btn-pix" class="payment-btn p-2 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
+                                <i data-lucide="qr-code" class="w-4 h-4 mb-1 text-emerald-600"></i><span>PIX</span>
                             </button>
-                            <button onclick="setPaymentMethod('cartao')" id="pay-btn-cartao" class="payment-btn p-2.5 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
-                                <i data-lucide="credit-card" class="w-5 h-5 mb-1 text-indigo-600"></i><span>Cartão</span>
+                            <button onclick="setPaymentMethod('cartao')" id="pay-btn-cartao" class="payment-btn p-2 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
+                                <i data-lucide="credit-card" class="w-4 h-4 mb-1 text-indigo-600"></i><span>Cartão</span>
                             </button>
-                            <button onclick="setPaymentMethod('dinheiro')" id="pay-btn-dinheiro" class="payment-btn p-2.5 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
-                                <i data-lucide="banknote" class="w-5 h-5 mb-1 text-amber-600"></i><span>Dinheiro</span>
+                            <button onclick="setPaymentMethod('dinheiro')" id="pay-btn-dinheiro" class="payment-btn p-2 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
+                                <i data-lucide="banknote" class="w-4 h-4 mb-1 text-amber-600"></i><span>Dinheiro</span>
                             </button>
-                            <button onclick="setPaymentMethod('fiado')" id="pay-btn-fiado" class="payment-btn p-2.5 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
-                                <i data-lucide="users" class="w-5 h-5 mb-1 text-rose-600"></i><span>Fiado</span>
+                            <button onclick="setPaymentMethod('fiado')" id="pay-btn-fiado" class="payment-btn p-2 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
+                                <i data-lucide="users" class="w-4 h-4 mb-1 text-rose-600"></i><span>Fiado</span>
                             </button>
                         </div>
                     </div>
 
                     <!-- Dados Fiado -->
-                    <div id="fiado-fields-box" class="hidden bg-rose-50 border border-rose-200 p-3.5 rounded-xl space-y-3">
+                    <div id="fiado-fields-box" class="hidden bg-rose-50 border border-rose-200 p-2.5 rounded-xl space-y-2">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-bold text-rose-900 uppercase">Dados do Cliente</span>
                             <span class="text-xs text-rose-700 font-semibold">* obrigatório</span>
                         </div>
-                        <div>
-                            <label class="text-[11px] font-semibold text-slate-600 block mb-1">Nome Completo *</label>
-                            <input type="text" id="fiado-name" placeholder="Ex: João Silva" class="w-full px-3 py-1.5 border border-rose-300 rounded-lg text-sm bg-white">
-                        </div>
-                        <div>
-                            <label class="text-[11px] font-semibold text-slate-600 block mb-1">Telefone *</label>
-                            <input type="tel" id="fiado-phone" placeholder="(00) 00000-0000" class="w-full px-3 py-1.5 border border-rose-300 rounded-lg text-sm bg-white">
-                        </div>
-                        <div>
-                            <label class="text-[11px] font-semibold text-slate-600 block mb-1">Observações</label>
-                            <input type="text" id="fiado-obs" placeholder="Ex: pagar até dia 15" class="w-full px-3 py-1.5 border border-rose-300 rounded-lg text-sm bg-white">
-                        </div>
+                        <div><input type="text" id="fiado-name" placeholder="Nome Completo *" class="w-full px-2.5 py-1.5 border border-rose-300 rounded-lg text-xs bg-white"></div>
+                        <div><input type="tel" id="fiado-phone" placeholder="Telefone *" class="w-full px-2.5 py-1.5 border border-rose-300 rounded-lg text-xs bg-white"></div>
+                        <div><input type="text" id="fiado-obs" placeholder="Observações" class="w-full px-2.5 py-1.5 border border-rose-300 rounded-lg text-xs bg-white"></div>
                     </div>
 
                     <!-- Calculadora Dinheiro -->
-                    <div id="cash-calculator-box" class="hidden bg-amber-50 border border-amber-200 p-3.5 rounded-xl space-y-3">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-amber-900 uppercase">Valor Recebido & Troco</span>
-                        </div>
+                    <div id="cash-calculator-box" class="hidden bg-amber-50 border border-amber-200 p-2.5 rounded-xl space-y-2">
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="text-[11px] font-semibold text-slate-600 block mb-1">Recebido (R$):</label>
-                                <input type="number" step="0.01" id="cash-received" oninput="calculateChange()" placeholder="0,00" class="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-base font-bold text-slate-800 bg-white">
+                                <label class="text-[10px] font-semibold text-slate-600 block mb-0.5">Recebido (R$):</label>
+                                <input type="number" step="0.01" id="cash-received" oninput="calculateChange()" placeholder="0,00" class="w-full px-2 py-1 border border-amber-300 rounded-lg text-sm font-bold text-slate-800 bg-white">
                             </div>
                             <div>
-                                <label class="text-[11px] font-semibold text-slate-600 block mb-1">Troco a Devolver:</label>
-                                <div id="cash-change-display" class="w-full px-3 py-1.5 bg-amber-100 border border-amber-300 rounded-lg text-base font-extrabold text-amber-900 flex items-center">
-                                    R$ 0,00
-                                </div>
+                                <label class="text-[10px] font-semibold text-slate-600 block mb-0.5">Troco:</label>
+                                <div id="cash-change-display" class="w-full px-2 py-1 bg-amber-100 border border-amber-300 rounded-lg text-sm font-extrabold text-amber-900 flex items-center">R$ 0,00</div>
                             </div>
                         </div>
                         <div>
-                            <label class="text-[11px] font-semibold text-slate-600 block mb-1">Desconto (R$)</label>
-                            <input type="number" step="0.01" min="0" id="cash-discount" oninput="calculateChange()" placeholder="0,00" class="w-24 px-2 py-1 border border-amber-300 rounded-lg text-sm font-bold bg-white">
+                            <label class="text-[10px] font-semibold text-slate-600 block mb-0.5">Desconto (R$)</label>
+                            <input type="number" step="0.01" min="0" id="cash-discount" oninput="calculateChange()" placeholder="0,00" class="w-24 px-2 py-1 border border-amber-300 rounded-lg text-xs font-bold bg-white">
                         </div>
-                        <div class="flex space-x-1.5 overflow-x-auto pt-1">
-                            <button onclick="setQuickCash('exact')" class="px-2 py-1 bg-amber-200/70 hover:bg-amber-300 text-amber-900 text-xs font-bold rounded">Exato</button>
-                            <button onclick="setQuickCash(5)" class="px-2 py-1 bg-amber-200/70 hover:bg-amber-300 text-amber-900 text-xs font-bold rounded">R$ 5</button>
-                            <button onclick="setQuickCash(10)" class="px-2 py-1 bg-amber-200/70 hover:bg-amber-300 text-amber-900 text-xs font-bold rounded">R$ 10</button>
-                            <button onclick="setQuickCash(20)" class="px-2 py-1 bg-amber-200/70 hover:bg-amber-300 text-amber-900 text-xs font-bold rounded">R$ 20</button>
-                            <button onclick="setQuickCash(50)" class="px-2 py-1 bg-amber-200/70 hover:bg-amber-300 text-amber-900 text-xs font-bold rounded">R$ 50</button>
+                        <div class="flex space-x-1 overflow-x-auto pt-0.5">
+                            <button onclick="setQuickCash('exact')" class="px-2 py-0.5 bg-amber-200/70 text-amber-900 text-[10px] font-bold rounded">Exato</button>
+                            <button onclick="setQuickCash(5)" class="px-2 py-0.5 bg-amber-200/70 text-amber-900 text-[10px] font-bold rounded">R$ 5</button>
+                            <button onclick="setQuickCash(10)" class="px-2 py-0.5 bg-amber-200/70 text-amber-900 text-[10px] font-bold rounded">R$ 10</button>
+                            <button onclick="setQuickCash(20)" class="px-2 py-0.5 bg-amber-200/70 text-amber-900 text-[10px] font-bold rounded">R$ 20</button>
+                            <button onclick="setQuickCash(50)" class="px-2 py-0.5 bg-amber-200/70 text-amber-900 text-[10px] font-bold rounded">R$ 50</button>
                         </div>
                     </div>
 
-                    <button onclick="finalizeSale()" id="btn-checkout" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-base rounded-xl shadow-lg transition flex items-center justify-center space-x-2">
+                    <button onclick="finalizeSale()" id="btn-checkout" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm rounded-xl shadow-lg transition flex items-center justify-center space-x-2 shrink-0">
                         <i data-lucide="check-circle" class="w-5 h-5"></i>
                         <span>FINALIZAR VENDA</span>
                     </button>
@@ -391,7 +377,6 @@
                     <h2 class="text-2xl font-extrabold text-slate-800">Histórico de Vendas & Desempenho</h2>
                     <p class="text-slate-500 text-sm">Dados sincronizados em tempo real na nuvem.</p>
                 </div>
-                <!-- BOTÕES RESTAURADOS AQUI -->
                 <div class="flex items-center space-x-3 flex-wrap gap-2">
                     <button onclick="toggleValuesVisibility()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-2.5 rounded-lg text-sm flex items-center space-x-2">
                         <i data-lucide="eye" id="eye-icon" class="w-4 h-4"></i>
@@ -408,14 +393,11 @@
                     <button onclick="confirmClearSalesHistory()" id="btn-clear-history" class="bg-rose-100 text-rose-700 font-semibold px-3 py-2.5 rounded-lg text-xs flex items-center space-x-1">
                         <i data-lucide="rotate-ccw" class="w-4 h-4"></i><span>Zerar Histórico</span>
                     </button>
-                    <!-- Restauração dos botões de backup de JSON -->
                     <button onclick="exportBackup()" id="btn-export-backup" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-2.5 rounded-lg shadow-md transition flex items-center space-x-2 text-xs">
-                        <i data-lucide="download" class="w-4 h-4"></i>
-                        <span>Exportar dados</span>
+                        <i data-lucide="download" class="w-4 h-4"></i><span>Exportar dados</span>
                     </button>
                     <button onclick="document.getElementById('import-file-input').click()" id="btn-import-backup" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-2.5 rounded-lg shadow-md transition flex items-center space-x-2 text-xs">
-                        <i data-lucide="upload" class="w-4 h-4"></i>
-                        <span>Importar dados</span>
+                        <i data-lucide="upload" class="w-4 h-4"></i><span>Importar dados</span>
                     </button>
                     <input type="file" id="import-file-input" accept=".json" onchange="importBackup(event)">
                 </div>
@@ -834,6 +816,13 @@
             localStorage.setItem('pdv_escola_lock_password', lockPass);
             localStorage.setItem('pdv_escola_master_password', masterPass);
         }
+        
+        function ensurePasswordsExist() {
+            const passwords = loadPasswordsFromLocalStorage();
+            if (!localStorage.getItem('pdv_escola_lock_password') || !localStorage.getItem('pdv_escola_master_password')) {
+                savePasswordsToLocalStorage('0204', '1997');
+            }
+        }
 
         const USERS = { master: '1997', operador: '1234' };
 
@@ -911,6 +900,7 @@
         //  INICIALIZAÇÃO DA INTERFACE
         // ============================================================
         function initApp() {
+            ensurePasswordsExist();
             setupFirebaseListeners();
             loadThemeFromLocalStorage();
             updateClock();
@@ -919,6 +909,12 @@
             lucide.createIcons();
             applyPermissions();
             switchTab('pdv');
+            updateEyeButton();
+            setupKeyboardShortcuts();
+
+            if (localStorage.getItem('pdv_escola_locked') === 'true') {
+                lockSystem();
+            }
 
             // Verifica e ativa o Modo Celular salvo
             if (localStorage.getItem('pdv_escola_mobile_mode') === 'true') {
@@ -1052,6 +1048,31 @@
                 cart.push({ id: product.id, name: product.name, price: product.price, quantity: 1, firestoreId: product.firestoreId });
             }
             renderCart();
+        }
+        
+        function openCustomItemModal() {
+            document.getElementById('custom-item-name').value = '';
+            document.getElementById('custom-item-price').value = '';
+            document.getElementById('modal-custom-item').classList.remove('hidden');
+            document.getElementById('custom-item-name').focus();
+        }
+
+        function closeCustomItemModal() {
+            document.getElementById('modal-custom-item').classList.add('hidden');
+        }
+
+        function addCustomItem() {
+            const name = document.getElementById('custom-item-name').value.trim() || 'Item Avulso';
+            const price = parseFloat(document.getElementById('custom-item-price').value);
+            if (!price || price <= 0) {
+                alert('Informe um valor válido (maior que zero).');
+                return;
+            }
+            const tempId = -Date.now();
+            cart.push({ id: tempId, name: name, price: price, quantity: 1 });
+            renderCart();
+            showToast(`➕ ${name} adicionado (R$ ${price.toFixed(2).replace('.', ',')})`);
+            closeCustomItemModal();
         }
 
         function updateCartQuantity(id, delta) {
@@ -1203,6 +1224,11 @@
             showToast('✅ Venda sincronizada na nuvem!');
             cart = [];
             renderCart();
+            document.getElementById('cash-received').value = '';
+            document.getElementById('cash-discount').value = '';
+            document.getElementById('fiado-name').value = '';
+            document.getElementById('fiado-phone').value = '';
+            document.getElementById('fiado-obs').value = '';
         }
 
         // ============================================================
@@ -1327,21 +1353,64 @@
                         </span>
                     </td>
                     <td class="p-3.5 text-center space-x-2">
-                        ${!f.paid ? `<button onclick="markFiadoAsPaid('${f.firestoreId}')" class="text-emerald-600 font-semibold text-xs">Marcar Pago</button>` : ''}
-                        <button onclick="deleteFiado('${f.firestoreId}')" class="text-rose-600 font-semibold text-xs">Excluir</button>
+                        ${currentUserRole === 'master' ? `<button onclick="openEditFiadoModal('${f.firestoreId}')" class="text-purple-600 font-semibold text-xs">Editar</button>` : ''}
+                        ${!f.paid && currentUserRole === 'master' ? `<button onclick="markFiadoAsPaid('${f.firestoreId}')" class="text-emerald-600 font-semibold text-xs">Marcar Pago</button>` : ''}
+                        ${currentUserRole === 'master' ? `<button onclick="deleteFiado('${f.firestoreId}')" class="text-rose-600 font-semibold text-xs">Excluir</button>` : ''}
                     </td>
                 </tr>
             `).join('');
         }
 
+        function openEditFiadoModal(docId) {
+            if (currentUserRole !== 'master') return;
+            const fiado = fiados.find(f => f.firestoreId === docId);
+            if (!fiado) return;
+            document.getElementById('edit-fiado-id').value = docId;
+            document.getElementById('edit-fiado-name').value = fiado.name || '';
+            document.getElementById('edit-fiado-phone').value = fiado.phone || '';
+            document.getElementById('edit-fiado-obs').value = fiado.obs || '';
+            document.getElementById('modal-edit-fiado').classList.add('active');
+        }
+
+        function closeEditFiadoModal() {
+            document.getElementById('modal-edit-fiado').classList.remove('active');
+        }
+
+        function confirmEditFiado() {
+            if (currentUserRole !== 'master') return;
+            const id = document.getElementById('edit-fiado-id').value;
+            const name = document.getElementById('edit-fiado-name').value.trim();
+            const phone = document.getElementById('edit-fiado-phone').value.trim();
+            const obs = document.getElementById('edit-fiado-obs').value.trim();
+
+            if (!name) return alert('O nome do cliente é obrigatório.');
+
+            window._pendingAction = 'editFiado';
+            window._pendingFiadoData = { id, name, phone, obs };
+            document.getElementById('password-modal-message').textContent = 'Digite a senha mestre para salvar as alterações';
+            document.getElementById('modal-password').classList.remove('hidden');
+            document.getElementById('master-password-input').value = '';
+            document.getElementById('master-password-input').focus();
+        }
+
         async function markFiadoAsPaid(docId) {
-            await db.collection("fiados").doc(docId).update({ paid: true });
-            showToast('✅ Fiado marcado como pago!');
+            if (currentUserRole !== 'master') return;
+            window._pendingAction = 'markPaid';
+            window._pendingFiadoId = docId;
+            document.getElementById('password-modal-message').textContent = 'Digite a senha mestre para marcar como pago';
+            document.getElementById('modal-password').classList.remove('hidden');
+            document.getElementById('master-password-input').value = '';
+            document.getElementById('master-password-input').focus();
         }
 
         async function deleteFiado(docId) {
-            await db.collection("fiados").doc(docId).delete();
-            showToast('🗑️ Fiado removido!');
+            if (currentUserRole !== 'master') return;
+            window._pendingAction = 'deleteFiado';
+            window._pendingFiadoId = docId;
+            document.getElementById('password-modal-message').textContent = 'Digite a senha mestre para excluir fiado';
+            document.getElementById('modal-password').classList.remove('hidden');
+            document.getElementById('master-password-input').value = '';
+            document.getElementById('master-password-input').focus();
         }
 
         // ============================================================
@@ -1372,10 +1441,28 @@
         }
 
         async function deleteSale(docId) {
-            if (confirm('Excluir este registro de venda?')) {
+            if (confirm('Excluir este registro de venda na nuvem?')) {
                 await db.collection("vendas").doc(docId).delete();
                 showToast('🗑️ Venda excluída!');
             }
+        }
+
+        function cancelSale() {
+            if (!lastSale) return showToast('⚠️ Nenhuma venda para cancelar.');
+            window._pendingAction = 'cancelSale';
+            document.getElementById('password-modal-message').textContent = 'Digite a senha mestre para cancelar a venda';
+            document.getElementById('modal-password').classList.remove('hidden');
+            document.getElementById('master-password-input').value = '';
+            document.getElementById('master-password-input').focus();
+        }
+
+        function confirmClearSalesHistory() {
+            if (currentUserRole !== 'master') return alert('Apenas o master pode zerar o histórico.');
+            window._pendingAction = 'clearHistory';
+            document.getElementById('password-modal-message').textContent = 'Digite a senha mestre para zerar o histórico';
+            document.getElementById('modal-password').classList.remove('hidden');
+            document.getElementById('master-password-input').value = '';
+            document.getElementById('master-password-input').focus();
         }
 
         function getDailyData(sales) {
@@ -1408,45 +1495,26 @@
         }
 
         // ============================================================
-        //  BACKUP E EXPORTAÇÃO (RESTAURADOS)
+        //  BACKUP E EXPORTAÇÃO
         // ============================================================
         function exportToExcel() {
             if (currentUserRole !== 'master') return;
-            if (!salesHistory.length) {
-                alert('Não há vendas para exportar.');
-                return;
-            }
+            if (!salesHistory.length) return alert('Não há vendas para exportar.');
             const salesData = salesHistory.map(s => ({
-                'ID': s.id,
-                'Data/Hora': s.datetime,
-                'Pagamento': s.paymentMethod.toUpperCase(),
-                'Total (R$)': s.total,
-                'Recebido (R$)': s.cashReceived || s.total,
-                'Troco (R$)': s.changeGiven || 0,
-                'Desconto (R$)': s.discount || 0,
-                'Qtd Itens': s.items.reduce((sum, i) => sum + i.quantity, 0),
-                'Vendedor': s.operator || ''
+                'ID': s.id, 'Data/Hora': s.datetime, 'Pagamento': s.paymentMethod.toUpperCase(),
+                'Total (R$)': s.total, 'Recebido (R$)': s.cashReceived || s.total,
+                'Troco (R$)': s.changeGiven || 0, 'Desconto (R$)': s.discount || 0,
+                'Qtd Itens': s.items.reduce((sum, i) => sum + i.quantity, 0), 'Vendedor': s.operator || ''
             }));
             const itemsData = [];
             salesHistory.forEach(s => {
                 s.items.forEach(i => {
-                    itemsData.push({
-                        'ID Venda': s.id,
-                        'Data': s.datetime,
-                        'Produto': i.name,
-                        'Preço Unitário': i.price,
-                        'Quantidade': i.quantity,
-                        'Subtotal': i.price * i.quantity,
-                        'Pagamento': s.paymentMethod.toUpperCase(),
-                        'Vendedor': s.operator || ''
-                    });
+                    itemsData.push({ 'ID Venda': s.id, 'Data': s.datetime, 'Produto': i.name, 'Preço Unitário': i.price, 'Quantidade': i.quantity, 'Subtotal': i.price * i.quantity, 'Pagamento': s.paymentMethod.toUpperCase(), 'Vendedor': s.operator || '' });
                 });
             });
             const wb = XLSX.utils.book_new();
-            const ws1 = XLSX.utils.json_to_sheet(salesData);
-            const ws2 = XLSX.utils.json_to_sheet(itemsData);
-            XLSX.utils.book_append_sheet(wb, ws1, 'Vendas');
-            XLSX.utils.book_append_sheet(wb, ws2, 'Itens');
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(salesData), 'Vendas');
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(itemsData), 'Itens');
             XLSX.writeFile(wb, `PDV_${new Date().toISOString().slice(0,10)}.xlsx`);
             showToast('📊 Excel exportado!');
         }
@@ -1455,36 +1523,155 @@
             if (currentUserRole !== 'master') return;
             const passwords = loadPasswordsFromLocalStorage();
             const data = { 
-                products, 
-                salesHistory, 
-                fiados, 
-                schoolName, 
-                eventName, 
+                products, salesHistory, fiados, schoolName, eventName, 
                 theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light',
-                lockPassword: passwords.lockPassword,
-                masterPassword: passwords.masterPassword
+                lockPassword: passwords.lockPassword, masterPassword: passwords.masterPassword
             };
-            const json = JSON.stringify(data, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const a = document.createElement('a');
-            a.href = url;
+            a.href = URL.createObjectURL(blob);
             a.download = `backup_nuvem_pdv_${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
+            a.click(); URL.revokeObjectURL(a.href);
             showToast('📤 Backup exportado!');
         }
 
         function importBackup(e) {
             if (currentUserRole !== 'master') return;
-            const file = e.target.files[0];
-            if (!file) return;
             alert('AVISO: Seus dados estão salvos na nuvem do Firebase em tempo real. Importar um arquivo JSON pode causar dados duplicados. Para migrações, gerencie os dados diretamente no painel do Firebase.');
-            e.target.value = ''; // Limpa o input de arquivo
+            e.target.value = '';
         }
 
         // ============================================================
-        //  TEMA & AUXILIARES
+        //  CONFIGURAÇÕES DE ESCOLA E SENHAS
+        // ============================================================
+        function updateSettingsPasswordDisplay() {
+            document.getElementById('current-lock-password-display').textContent = '****';
+            document.getElementById('current-master-password-display').textContent = '****';
+        }
+
+        function openSettingsModal() {
+            if (currentUserRole !== 'master') return;
+            document.getElementById('settings-school-name').value = schoolName;
+            document.getElementById('settings-event-name').value = eventName;
+            document.getElementById('settings-current-master-password').value = '';
+            document.getElementById('settings-new-lock-password').value = '';
+            document.getElementById('settings-new-master-password').value = '';
+            updateSettingsPasswordDisplay();
+            document.getElementById('modal-settings').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() { document.getElementById('modal-settings').classList.add('hidden'); }
+
+        async function saveSettings(e) {
+            e.preventDefault();
+            if (currentUserRole !== 'master') return;
+
+            const passwords = loadPasswordsFromLocalStorage();
+            const currentMaster = document.getElementById('settings-current-master-password').value.trim();
+            const newLock = document.getElementById('settings-new-lock-password').value.trim();
+            const newMaster = document.getElementById('settings-new-master-password').value.trim();
+
+            if (currentMaster !== passwords.masterPassword) {
+                alert('Senha mestre atual incorreta!');
+                document.getElementById('settings-current-master-password').value = '';
+                document.getElementById('settings-current-master-password').focus();
+                return;
+            }
+
+            let lockPass = passwords.lockPassword;
+            let masterPass = passwords.masterPassword;
+
+            if (newLock && newLock.length >= 4) lockPass = newLock;
+            else if (newLock && newLock.length < 4) return alert('A nova senha de bloqueio deve ter pelo menos 4 dígitos.');
+
+            if (newMaster && newMaster.length >= 4) masterPass = newMaster;
+            else if (newMaster && newMaster.length < 4) return alert('A nova senha mestre deve ter pelo menos 4 dígitos.');
+
+            savePasswordsToLocalStorage(lockPass, masterPass);
+            
+            const newSchoolName = document.getElementById('settings-school-name').value.trim() || 'PDV Escolar';
+            const newEventName = document.getElementById('settings-event-name').value.trim() || 'Sistema de Caixa & Gestão da Cantina';
+            
+            await db.collection("configuracoes").doc("geral").set({ schoolName: newSchoolName, eventName: newEventName });
+            closeSettingsModal();
+            showToast('✅ Configurações salvas!');
+        }
+
+        // ============================================================
+        //  VALIDAÇÃO GERAL DA SENHA MESTRE
+        // ============================================================
+        function closePasswordModal() {
+            document.getElementById('modal-password').classList.add('hidden');
+            window._pendingAction = null;
+        }
+
+        function validateMasterPassword() {
+            const input = document.getElementById('master-password-input').value;
+            const passwords = loadPasswordsFromLocalStorage();
+            if (input !== passwords.masterPassword) {
+                alert('Senha incorreta!');
+                document.getElementById('master-password-input').value = '';
+                document.getElementById('master-password-input').focus();
+                return;
+            }
+
+            const action = window._pendingAction;
+
+            if (action === 'clearHistory') {
+                if (confirm('ATENÇÃO: Apagar todo o histórico de vendas e fiados NA NUVEM?')) {
+                    db.collection("vendas").get().then(snap => snap.forEach(doc => doc.ref.delete()));
+                    db.collection("fiados").get().then(snap => snap.forEach(doc => doc.ref.delete()));
+                    showToast('🗑️ Histórico zerado');
+                }
+            } else if (action === 'markPaid') {
+                db.collection("fiados").doc(window._pendingFiadoId).update({ paid: true }).then(() => {
+                    showToast('✅ Fiado marcado como pago!');
+                });
+            } else if (action === 'deleteFiado') {
+                db.collection("fiados").doc(window._pendingFiadoId).delete().then(() => {
+                    showToast('🗑️ Fiado excluído!');
+                });
+            } else if (action === 'editFiado') {
+                const data = window._pendingFiadoData;
+                db.collection("fiados").doc(data.id).update({
+                    name: data.name,
+                    phone: data.phone || '',
+                    obs: data.obs || ''
+                }).then(() => {
+                    closeEditFiadoModal();
+                    showToast('✅ Fiado atualizado!');
+                });
+            } else if (action === 'cancelSale') {
+                const sale = lastSale;
+                if (sale && sale.firestoreId) {
+                    db.collection("vendas").doc(sale.firestoreId).delete();
+                    if (sale.paymentMethod === 'fiado') {
+                        db.collection("fiados").where("id", "==", sale.id).get().then(snap => snap.forEach(doc => doc.ref.delete()));
+                    }
+                    sale.items.forEach(item => {
+                        if (item.firestoreId) {
+                            const pRef = db.collection("produtos").doc(item.firestoreId);
+                            pRef.get().then(d => {
+                                if (d.exists && d.data().stock !== null && d.data().stock !== undefined) {
+                                    pRef.update({ stock: d.data().stock + item.quantity });
+                                }
+                            });
+                        }
+                    });
+                }
+                cart = sale.items.map(item => ({ ...item }));
+                renderCart();
+                document.getElementById('modal-receipt').classList.add('hidden');
+                lastSale = null;
+                showToast('↩️ Venda cancelada e carrinho restaurado!');
+                if (document.getElementById('view-pdv').classList.contains('hidden')) switchTab('pdv');
+            }
+
+            closePasswordModal();
+        }
+
+        // ============================================================
+        //  TEMA E MODO CELULAR
         // ============================================================
         function loadThemeFromLocalStorage() {
             if (localStorage.getItem('pdv_escola_theme') === 'dark') document.body.classList.add('dark-mode');
@@ -1503,11 +1690,19 @@
         function toggleValuesVisibility() {
             valuesVisible = !valuesVisible;
             document.querySelectorAll('.value-hidden').forEach(el => el.classList.toggle('hidden-value', !valuesVisible));
+            updateEyeButton();
         }
 
-        // ============================================================
-        //  MODO CELULAR / TABLET
-        // ============================================================
+        function updateEyeButton() {
+            const icon = document.getElementById('eye-icon');
+            const label = document.getElementById('eye-label');
+            if (icon && label) {
+                icon.setAttribute('data-lucide', valuesVisible ? 'eye' : 'eye-off');
+                label.textContent = valuesVisible ? 'Ocultar valores' : 'Mostrar valores';
+                lucide.createIcons();
+            }
+        }
+
         function toggleMobileMode() {
             document.body.classList.toggle('mobile-mode');
             const isMobile = document.body.classList.contains('mobile-mode');
@@ -1523,30 +1718,47 @@
         }
 
         // ============================================================
-        //  INICIALIZAÇÃO FINAL DOS EVENTOS DO TECLADO
+        //  ATALHOS E EVENTOS DE TECLADO (RESTAURADOS)
         // ============================================================
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'F1') {
+                    e.preventDefault();
+                    if (!document.getElementById('view-pdv').classList.contains('hidden')) {
+                        clearCart();
+                        showToast('🔄 Carrinho limpo');
+                    }
+                }
+                if (e.key === 'F2') {
+                    e.preventDefault();
+                    if (!document.getElementById('view-pdv').classList.contains('hidden')) {
+                        document.getElementById('pdv-search').focus();
+                    }
+                }
+                if (e.ctrlKey && e.key === 'p') {
+                    if (!document.getElementById('modal-receipt').classList.contains('hidden')) {
+                        e.preventDefault();
+                        printReceipt();
+                    }
+                }
+                if (e.key === 'Enter' && e.target.id === 'cash-received') {
+                    e.preventDefault();
+                    finalizeSale();
+                }
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             initLogin();
             
-            // Navegação de Login
             document.getElementById('login-password')?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-            document.getElementById('login-username').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') document.getElementById('login-password').focus();
-            });
-            document.getElementById('operator-name-input').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') confirmOperatorName();
-            });
+            document.getElementById('login-username')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('login-password').focus(); });
+            document.getElementById('operator-name-input')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmOperatorName(); });
 
-            // Enter nos campos do modal de editar fiado (Restaurados)
-            document.getElementById('edit-fiado-name').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') document.getElementById('edit-fiado-phone').focus();
-            });
-            document.getElementById('edit-fiado-phone').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') document.getElementById('edit-fiado-obs').focus();
-            });
-            document.getElementById('edit-fiado-obs').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') confirmEditFiado();
-            });
+            document.getElementById('edit-fiado-name')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('edit-fiado-phone').focus(); });
+            document.getElementById('edit-fiado-phone')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('edit-fiado-obs').focus(); });
+            document.getElementById('edit-fiado-obs')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmEditFiado(); });
+            document.getElementById('master-password-input')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') validateMasterPassword(); });
         });
     </script>
 </body>
