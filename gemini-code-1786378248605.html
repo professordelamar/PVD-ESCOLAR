@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDV Cantina Escolar - Caixa Profissional</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FIREBASE SDKs (Compatiblity Layer para fácil uso no HTML) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* ===== Base ===== */
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; transition: background-color 0.3s, color 0.3s; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .active-tab { background-color: #2563eb !important; color: #ffffff !important; }
+        .product-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .payment-btn.selected { border-color: #2563eb; background-color: #eff6ff; color: #1d4ed8; font-weight: 700; }
+        .hidden-value { filter: blur(5px); user-select: none; background: #e2e8f0; border-radius: 4px; padding: 0 6px; transition: all 0.2s; }
+        .hidden-value.reveal { filter: blur(0); background: transparent; }
+        .footer { background: #0f172a; color: #94a3b8; text-align: center; padding: 6px 0; font-size: 12px; border-top: 1px solid #1e293b; shrink: 0; }
+        .footer strong { color: #e2e8f0; }
+        
+        /* ===== TEMA ESCURO ===== */
+        body.dark-mode { background-color: #0f172a; color: #e2e8f0; }
+        body.dark-mode header { background-color: #0f172a !important; border-bottom: 1px solid #1e293b; }
+        body.dark-mode .bg-white { background-color: #1e293b !important; border-color: #334155 !important; }
+        body.dark-mode .bg-slate-50, body.dark-mode .bg-slate-100 { background-color: #1e293b !important; }
+        body.dark-mode .bg-slate-200 { background-color: #334155 !important; }
+        body.dark-mode .bg-slate-900 { background-color: #0f172a !important; }
+        body.dark-mode .border-slate-200 { border-color: #334155 !important; }
+        body.dark-mode .border-slate-300 { border-color: #475569 !important; }
+        body.dark-mode .text-slate-800 { color: #e2e8f0 !important; }
+        body.dark-mode .text-slate-700 { color: #cbd5e1 !important; }
+        body.dark-mode .text-slate-600 { color: #94a3b8 !important; }
+        body.dark-mode .text-slate-500 { color: #64748b !important; }
+        body.dark-mode .product-card { background-color: #1e293b !important; border-color: #334155 !important; }
+        body.dark-mode .payment-btn { background-color: #1e293b; border-color: #475569; color: #cbd5e1; }
+        body.dark-mode .payment-btn.selected { background-color: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
+        body.dark-mode input, body.dark-mode select { background-color: #1e293b; border-color: #475569; color: #e2e8f0; }
+        body.dark-mode .modal-content { background-color: #1e293b !important; border-color: #334155 !important; }
+        body.dark-mode .footer { background: #0f172a; border-top: 1px solid #1e293b; }
+        
+        #import-file-input { display: none; }
+        /* ===== Bloqueio ===== */
+        #lock-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 9999; display: none; align-items: center; justify-content: center; flex-direction: column; }
+        #lock-overlay.active { display: flex; }
+        #lock-overlay .lock-box { background: white; padding: 40px 30px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        body.dark-mode #lock-overlay .lock-box { background: #1e293b; border: 1px solid #334155; }
+        #lock-overlay .lock-box h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+        #lock-overlay .lock-box p { color: #64748b; font-size: 0.9rem; margin-bottom: 20px; }
+        #lock-overlay .lock-box input { width: 100%; padding: 10px 14px; border: 2px solid #cbd5e1; border-radius: 12px; font-size: 1rem; text-align: center; letter-spacing: 4px; font-weight: 700; margin-bottom: 16px; outline: none; }
+        body.dark-mode #lock-overlay .lock-box input { background: #0f172a; border-color: #475569; color: #f1f5f9; }
+        #lock-overlay .lock-box button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+        #lock-overlay .lock-box .error { color: #ef4444; font-size: 0.8rem; margin-top: -10px; margin-bottom: 12px; display: none; }
+        
+        /* ===== Toast ===== */
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #0f172a; color: white; padding: 10px 24px; border-radius: 12px; font-weight: 600; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); z-index: 10000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; font-size: 0.9rem; }
+        #toast.show { opacity: 1; }
+        body.dark-mode #toast { background: #1e293b; border: 1px solid #334155; }
+        
+        /* ===== Impressão ===== */
+        @media print {
+            body * { visibility: hidden; }
+            #modal-receipt, #modal-receipt * { visibility: visible; }
+            #modal-receipt { position: fixed !important; left: 0 !important; top: 0 !important; width: 100% !important; max-width: 100% !important; background: white !important; box-shadow: none !important; border: none !important; padding: 20px !important; margin: 0 !important; z-index: 99999 !important; }
+            #modal-receipt button { display: none !important; }
+        }
+        
+        /* ===== LOGIN ===== */
+        #login-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px); z-index: 99999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        #login-overlay .login-box { background: white; padding: 40px 35px; border-radius: 24px; max-width: 400px; width: 90%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; }
+        body.dark-mode #login-overlay .login-box { background: #1e293b; border: 1px solid #334155; }
+        #login-overlay .login-box h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 6px; color: #0f172a; }
+        body.dark-mode #login-overlay .login-box h2 { color: #f1f5f9; }
+        #login-overlay .login-box .subtitle { color: #64748b; font-size: 0.9rem; margin-bottom: 24px; }
+        #login-overlay .login-box .input-group { margin-bottom: 16px; text-align: left; }
+        #login-overlay .login-box .input-group label { display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 4px; }
+        #login-overlay .login-box .input-group input { width: 100%; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; outline: none; background: white; color: #0f172a; }
+        body.dark-mode #login-overlay .login-box .input-group input { background: #0f172a; border-color: #475569; color: #f1f5f9; }
+        #login-overlay .login-box .login-error { color: #ef4444; font-size: 0.8rem; margin-top: -8px; margin-bottom: 12px; display: none; }
+        #login-overlay .login-box button { width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; }
+        #login-overlay.hidden { display: none !important; }
+        
+        /* Modais Adicionais */
+        #modal-operator-name, #modal-edit-fiado { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); z-index: 99997; display: none; align-items: center; justify-content: center; flex-direction: column; }
+        #modal-operator-name.active, #modal-edit-fiado.active { display: flex; }
+        .modal-box { background: white; padding: 30px; border-radius: 20px; max-width: 400px; width: 90%; box-shadow: 0 20px 40px -12px rgba(0,0,0,0.3); }
+        body.dark-mode .modal-box { background: #1e293b; border: 1px solid #334155; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-slate-800">
+
+    <!-- ===== OVERLAY DE LOGIN ===== -->
+    <div id="login-overlay">
+        <div class="login-box">
+            <i data-lucide="store" class="w-14 h-14 text-blue-600 mx-auto mb-2"></i>
+            <h2>PDV Escolar</h2>
+            <p class="subtitle">Faça login para continuar</p>
+            <div class="input-group">
+                <label>Usuário</label>
+                <input type="text" id="login-username" placeholder="Digite seu usuário" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label>Senha</label>
+                <input type="password" id="login-password" placeholder="••••••••" autocomplete="off">
+            </div>
+            <div class="login-error" id="login-error">Usuário ou senha incorretos.</div>
+            <button onclick="doLogin()">Entrar</button>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: NOME DO OPERADOR ===== -->
+    <div id="modal-operator-name">
+        <div class="modal-box text-center">
+            <i data-lucide="user" class="w-12 h-12 text-blue-600 mx-auto mb-2"></i>
+            <h3 class="font-bold text-lg mb-1">Informe seu nome</h3>
+            <p class="text-sm text-slate-500 mb-4">Digite seu nome para continuar como operador</p>
+            <input type="text" id="operator-name-input" placeholder="Ex: João Silva" class="w-full p-2.5 border border-slate-300 rounded-xl mb-4 text-center" autocomplete="off">
+            <button onclick="confirmOperatorName()" class="w-full p-2.5 bg-blue-600 text-white rounded-xl font-bold">Confirmar</button>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: EDITAR FIADO ===== -->
+    <div id="modal-edit-fiado">
+        <div class="modal-box">
+            <i data-lucide="edit" class="w-12 h-12 text-purple-600 mx-auto mb-2"></i>
+            <h3 class="font-bold text-lg text-center mb-1">Editar Fiado</h3>
+            <p class="text-sm text-slate-500 text-center mb-4">Altere os dados do cliente</p>
+            <input type="hidden" id="edit-fiado-id">
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Nome Completo</label>
+                    <input type="text" id="edit-fiado-name" class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Telefone</label>
+                    <input type="text" id="edit-fiado-phone" class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Observações</label>
+                    <input type="text" id="edit-fiado-obs" class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                </div>
+            </div>
+            <div class="flex gap-2 mt-5">
+                <button onclick="closeEditFiadoModal()" class="flex-1 p-2.5 bg-slate-200 text-slate-700 font-bold rounded-lg text-sm">Cancelar</button>
+                <button onclick="confirmEditFiado()" class="flex-1 p-2.5 bg-purple-600 text-white font-bold rounded-lg text-sm">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== OVERLAY DE BLOQUEIO ===== -->
+    <div id="lock-overlay">
+        <div class="lock-box">
+            <i data-lucide="lock" class="w-12 h-12 text-blue-600 mx-auto mb-3"></i>
+            <h2>Sistema Bloqueado</h2>
+            <p>Digite a senha para desbloquear</p>
+            <input type="password" id="lock-password-input" placeholder="••••" maxlength="4" inputmode="numeric" autocomplete="off">
+            <div class="error" id="lock-error">Senha incorreta. Tente novamente.</div>
+            <button onclick="unlockSystem()">Desbloquear</button>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div id="toast"></div>
+
+    <!-- Header Principal -->
+    <header class="bg-slate-900 text-white px-6 py-3 flex flex-wrap items-center justify-between gap-3 shadow-md shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="bg-blue-600 text-white p-2 rounded-lg flex items-center justify-center">
+                <i data-lucide="store" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 id="header-school-name" class="text-xl font-extrabold tracking-tight leading-none text-white">PDV Escolar</h1>
+                <p id="header-event-name" class="text-xs text-slate-400 font-medium mt-0.5">Sistema de Caixa & Gestão da Cantina</p>
+            </div>
+        </div>
+
+        <!-- Abas de Navegação -->
+        <nav class="flex flex-wrap space-x-1 bg-slate-800 p-1 rounded-xl">
+            <button onclick="switchTab('pdv')" id="tab-btn-pdv" class="tab-btn active-tab flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-sm transition text-slate-300 hover:text-white">
+                <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                <span>Caixa</span>
+            </button>
+            <button onclick="switchTab('relatorios')" id="tab-btn-relatorios" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-sm transition text-slate-300 hover:text-white">
+                <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                <span>Vendas</span>
+            </button>
+            <button onclick="switchTab('produtos')" id="tab-btn-produtos" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-sm transition text-slate-300 hover:text-white">
+                <i data-lucide="package" class="w-4 h-4"></i>
+                <span>Produtos</span>
+            </button>
+            <button onclick="switchTab('fiados')" id="tab-btn-fiados" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-sm transition text-slate-300 hover:text-white">
+                <i data-lucide="users" class="w-4 h-4"></i>
+                <span>Fiados</span>
+            </button>
+        </nav>
+
+        <!-- Informações à Direita -->
+        <div class="flex items-center space-x-4 ml-auto">
+            <button onclick="doLogout()" class="text-slate-400 hover:text-white transition" title="Sair"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+            <button onclick="lockSystem()" class="text-slate-400 hover:text-white transition" title="Bloquear sistema"><i data-lucide="lock" class="w-5 h-5"></i></button>
+            <button onclick="toggleTheme()" class="theme-toggle text-slate-400 hover:text-white" title="Alternar tema"><i data-lucide="moon" id="theme-icon" class="w-5 h-5"></i></button>
+            <button onclick="openSettingsModal()" id="btn-settings" class="text-slate-400 hover:text-white transition" title="Configurações"><i data-lucide="settings" class="w-5 h-5"></i></button>
+            <div class="text-right hidden sm:block">
+                <p id="clock-time" class="text-sm font-bold leading-none text-slate-200">00:00:00</p>
+                <p id="clock-date" class="text-xs text-slate-400 font-medium">00/00/0000</p>
+            </div>
+            <div class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-3 py-1.5 rounded-full flex items-center space-x-1.5 font-semibold">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Nuvem Ativa</span>
+            </div>
+            <span id="header-user-role" class="text-xs font-medium text-slate-400 bg-slate-800 px-2 py-1 rounded-full"></span>
+        </div>
+    </header>
+
+    <!-- Corpos da Aplicação -->
+    <main class="flex-1 overflow-hidden relative">
+
+        <!-- ABA 1: PDV (CAIXA) -->
+        <div id="view-pdv" class="h-full grid grid-cols-12 gap-0">
+            <div class="col-span-12 lg:col-span-7 xl:col-span-8 flex flex-col h-full bg-slate-100 border-r border-slate-200">
+                <div class="p-4 bg-white border-b border-slate-200 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                    <div class="relative w-full sm:w-80">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="pdv-search" oninput="renderPDVProducts()" placeholder="Buscar produto..." class="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none">
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-medium">F2</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openCustomItemModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-2 rounded-lg transition flex items-center space-x-1 text-sm shadow-sm">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                            <span>Item Avulso</span>
+                        </button>
+                        <div id="category-pills" class="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0"></div>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div id="pdv-products-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+                </div>
+            </div>
+
+            <!-- Carrinho e Pagamento -->
+            <div class="col-span-12 lg:col-span-5 xl:col-span-4 flex flex-col h-full bg-white shadow-lg">
+                <div class="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="shopping-bag" class="w-5 h-5 text-blue-600"></i>
+                        <h2 class="font-bold text-slate-800 text-lg">Itens do Pedido</h2>
+                    </div>
+                    <button onclick="clearCart()" class="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2.5 py-1.5 rounded-md transition flex items-center space-x-1">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        <span>Limpar</span>
+                        <span class="text-[10px] ml-1 text-slate-400">F1</span>
+                    </button>
+                </div>
+
+                <div id="cart-items-container" class="flex-1 overflow-y-auto p-4 divide-y divide-slate-100"></div>
+
+                <div class="p-4 border-t border-slate-200 bg-slate-50 space-y-4">
+                    <div class="bg-slate-900 text-white p-4 rounded-xl flex justify-between items-center shadow-inner">
+                        <div>
+                            <span class="text-xs text-slate-400 font-medium uppercase tracking-wider block">Total a Pagar</span>
+                            <span id="cart-items-count" class="text-xs text-blue-400 font-semibold">0 itens no carrinho</span>
+                        </div>
+                        <div class="text-right">
+                            <span id="cart-total-price" class="text-3xl font-extrabold text-emerald-400">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Forma de Pagamento</label>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button onclick="setPaymentMethod('pix')" id="pay-btn-pix" class="payment-btn p-2.5 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
+                                <i data-lucide="qr-code" class="w-5 h-5 mb-1 text-emerald-600"></i><span>PIX</span>
+                            </button>
+                            <button onclick="setPaymentMethod('cartao')" id="pay-btn-cartao" class="payment-btn p-2.5 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
+                                <i data-lucide="credit-card" class="w-5 h-5 mb-1 text-indigo-600"></i><span>Cartão</span>
+                            </button>
+                            <button onclick="setPaymentMethod('dinheiro')" id="pay-btn-dinheiro" class="payment-btn p-2.5 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
+                                <i data-lucide="banknote" class="w-5 h-5 mb-1 text-amber-600"></i><span>Dinheiro</span>
+                            </button>
+                            <button onclick="setPaymentMethod('fiado')" id="pay-btn-fiado" class="payment-btn p-2.5 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
+                                <i data-lucide="users" class="w-5 h-5 mb-1 text-rose-600"></i><span>Fiado</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dados Fiado -->
+                    <div id="fiado-fields-box" class="hidden bg-rose-50 border border-rose-200 p-3.5 rounded-xl space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-rose-900 uppercase">Dados do Cliente</span>
+                            <span class="text-xs text-rose-700 font-semibold">* obrigatório</span>
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600 block mb-1">Nome Completo *</label>
+                            <input type="text" id="fiado-name" placeholder="Ex: João Silva" class="w-full px-3 py-1.5 border border-rose-300 rounded-lg text-sm bg-white">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600 block mb-1">Telefone *</label>
+                            <input type="tel" id="fiado-phone" placeholder="(00) 00000-0000" class="w-full px-3 py-1.5 border border-rose-300 rounded-lg text-sm bg-white">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600 block mb-1">Observações</label>
+                            <input type="text" id="fiado-obs" placeholder="Ex: pagar até dia 15" class="w-full px-3 py-1.5 border border-rose-300 rounded-lg text-sm bg-white">
+                        </div>
+                    </div>
+
+                    <!-- Calculadora Dinheiro -->
+                    <div id="cash-calculator-box" class="hidden bg-amber-50 border border-amber-200 p-3.5 rounded-xl space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-amber-900 uppercase">Valor Recebido & Troco</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-600 block mb-1">Recebido (R$):</label>
+                                <input type="number" step="0.01" id="cash-received" oninput="calculateChange()" placeholder="0,00" class="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-base font-bold text-slate-800 bg-white">
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-600 block mb-1">Troco a Devolver:</label>
+                                <div id="cash-change-display" class="w-full px-3 py-1.5 bg-amber-100 border border-amber-300 rounded-lg text-base font-extrabold text-amber-900 flex items-center">
+                                    R$ 0,00
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600 block mb-1">Desconto (R$)</label>
+                            <input type="number" step="0.01" min="0" id="cash-discount" oninput="calculateChange()" placeholder="0,00" class="w-24 px-2 py-1 border border-amber-300 rounded-lg text-sm font-bold bg-white">
+                        </div>
+                        <div class="flex space-x-1.5 overflow-x-auto pt-1">
+                            <button onclick="setQuickCash('exact')" class="px-2 py-1 bg-amber-200/70 hover:bg-amber-300 text-amber-900 text-xs font-bold rounded">Exato</button>
+                            <button onclick="setQuickCash(5)" class="px-2 py-1 bg-amber-200/70 hover:bg-amber-300 text-amber-900 text-xs font-bold rounded">R$ 5</button>
+                            <button onclick="setQuickCash(10)" class="px-2 py-1 bg-amber-200/70 hover:bg-amber-300 text-amber-900 text-xs font-bold rounded">R$ 10</button>
+                            <button onclick="setQuickCash(20)" class="px-2 py-1 bg-amber-200/70 hover:bg-amber-300 text-amber-900 text-xs font-bold rounded">R$ 20</button>
+                            <button onclick="setQuickCash(50)" class="px-2 py-1 bg-amber-200/70 hover:bg-amber-300 text-amber-900 text-xs font-bold rounded">R$ 50</button>
+                        </div>
+                    </div>
+
+                    <button onclick="finalizeSale()" id="btn-checkout" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-base rounded-xl shadow-lg transition flex items-center justify-center space-x-2">
+                        <i data-lucide="check-circle" class="w-5 h-5"></i>
+                        <span>FINALIZAR VENDA</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 2: VENDAS & RELATÓRIOS -->
+        <div id="view-relatorios" class="hidden h-full overflow-y-auto p-6 space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-extrabold text-slate-800">Histórico de Vendas & Desempenho</h2>
+                    <p class="text-slate-500 text-sm">Dados sincronizados em tempo real na nuvem.</p>
+                </div>
+                <div class="flex items-center space-x-3 flex-wrap gap-2">
+                    <button onclick="toggleValuesVisibility()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-2.5 rounded-lg text-sm flex items-center space-x-2">
+                        <i data-lucide="eye" id="eye-icon" class="w-4 h-4"></i>
+                        <span id="eye-label">Ocultar valores</span>
+                    </button>
+                    <div class="flex items-center space-x-2 text-sm">
+                        <input type="date" id="filter-date-start" onchange="applyDateFilter()" class="px-2 py-1.5 border rounded-lg text-xs">
+                        <input type="date" id="filter-date-end" onchange="applyDateFilter()" class="px-2 py-1.5 border rounded-lg text-xs">
+                        <button onclick="clearDateFilter()" class="text-rose-500 font-bold text-xs">Limpar</button>
+                    </div>
+                    <button onclick="exportToExcel()" id="btn-export-excel" class="bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-lg text-sm flex items-center space-x-2">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i><span>Exportar Excel</span>
+                    </button>
+                    <button onclick="confirmClearSalesHistory()" id="btn-clear-history" class="bg-rose-100 text-rose-700 font-semibold px-3 py-2.5 rounded-lg text-xs flex items-center space-x-1">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i><span>Zerar Histórico</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200">
+                <h3 class="font-bold text-slate-800 text-base mb-3">📈 Faturamento Diário (últimos 7 dias)</h3>
+                <canvas id="daily-chart" height="80"></canvas>
+            </div>
+
+            <!-- KPIs -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase">Total Geral</p>
+                        <h3 id="kpi-total-sales" class="text-2xl font-black text-slate-800 mt-1 value-hidden">R$ 0,00</h3>
+                        <p id="kpi-sales-count" class="text-xs text-slate-500 mt-1">0 vendas</p>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-xl text-blue-600"><i data-lucide="dollar-sign" class="w-6 h-6"></i></div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase">PIX</p>
+                        <h3 id="kpi-pix-total" class="text-2xl font-black text-emerald-600 mt-1 value-hidden">R$ 0,00</h3>
+                        <p id="kpi-pix-percent" class="text-xs text-slate-500 mt-1">0%</p>
+                    </div>
+                    <div class="bg-emerald-50 p-3 rounded-xl text-emerald-600"><i data-lucide="qr-code" class="w-6 h-6"></i></div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase">Cartão</p>
+                        <h3 id="kpi-card-total" class="text-2xl font-black text-indigo-600 mt-1 value-hidden">R$ 0,00</h3>
+                        <p id="kpi-card-percent" class="text-xs text-slate-500 mt-1">0%</p>
+                    </div>
+                    <div class="bg-indigo-50 p-3 rounded-xl text-indigo-600"><i data-lucide="credit-card" class="w-6 h-6"></i></div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase">Dinheiro</p>
+                        <h3 id="kpi-cash-total" class="text-2xl font-black text-amber-600 mt-1 value-hidden">R$ 0,00</h3>
+                        <p id="kpi-cash-percent" class="text-xs text-slate-500 mt-1">0%</p>
+                    </div>
+                    <div class="bg-amber-50 p-3 rounded-xl text-amber-600"><i data-lucide="banknote" class="w-6 h-6"></i></div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase">Fiado</p>
+                        <h3 id="kpi-fiado-total" class="text-2xl font-black text-purple-600 mt-1 value-hidden">R$ 0,00</h3>
+                        <p id="kpi-fiado-percent" class="text-xs text-slate-500 mt-1">0%</p>
+                    </div>
+                    <div class="bg-purple-50 p-3 rounded-xl text-purple-600"><i data-lucide="users" class="w-6 h-6"></i></div>
+                </div>
+            </div>
+
+            <!-- Tabelas -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-4 bg-white p-5 rounded-xl border border-slate-200 flex flex-col">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b">
+                        <h3 class="font-bold text-slate-800 text-base">Mais Vendidos</h3>
+                        <span id="kpi-total-items-sold" class="text-xs font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">0 un.</span>
+                    </div>
+                    <div id="product-ranking-list" class="flex-1 overflow-y-auto space-y-3 max-h-[420px]"></div>
+                </div>
+                <div class="lg:col-span-8 bg-white p-5 rounded-xl border border-slate-200">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b">
+                        <h3 class="font-bold text-slate-800 text-base">Registro de Vendas</h3>
+                        <span id="sales-table-count" class="text-xs text-slate-500 font-medium">Exibindo registros</span>
+                    </div>
+                    <div class="overflow-x-auto max-h-[420px]">
+                        <table class="w-full text-left text-sm text-slate-600">
+                            <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500 sticky top-0">
+                                <tr>
+                                    <th class="p-3">#ID</th><th class="p-3">Data / Hora</th><th class="p-3">Itens</th>
+                                    <th class="p-3 text-center">Pagamento</th><th class="p-3 text-right">Total</th>
+                                    <th class="p-3 text-center">Vendedor</th><th class="p-3 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sales-table-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 3: CADASTRO DE PRODUTOS -->
+        <div id="view-produtos" class="hidden h-full overflow-y-auto p-6 space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-extrabold text-slate-800">Gerenciador de Produtos</h2>
+                    <p class="text-slate-500 text-sm">Adicione novos itens ao cardápio, altere preços, fotos e estoque na nuvem.</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="openProductModal()" class="bg-blue-600 text-white font-bold px-4 py-2.5 rounded-lg text-sm flex items-center space-x-2">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i><span>Novo Produto</span>
+                    </button>
+                    <button onclick="restoreDefaultProducts()" class="bg-slate-100 text-slate-700 font-semibold px-3 py-2.5 rounded-lg text-xs flex items-center space-x-1">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i><span>Carregar Padrões</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b flex items-center justify-between">
+                    <input type="text" id="admin-product-search" oninput="renderAdminProducts()" placeholder="Buscar nos produtos..." class="w-72 px-3 py-1.5 border rounded-lg text-sm">
+                    <span id="admin-product-count" class="text-xs font-semibold text-slate-500">0 produtos</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500">
+                            <tr>
+                                <th class="p-3.5">Imagem</th><th class="p-3.5">Nome</th><th class="p-3.5">Categoria</th>
+                                <th class="p-3.5 text-right">Preço</th><th class="p-3.5 text-center">Estoque</th>
+                                <th class="p-3.5 text-center">Status</th><th class="p-3.5 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-products-table" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 4: FIADOS -->
+        <div id="view-fiados" class="hidden h-full overflow-y-auto p-6 space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-extrabold text-slate-800">Controle de Fiados</h2>
+                    <p class="text-slate-500 text-sm">Gerencie os débitos salvos na nuvem.</p>
+                </div>
+                <div><span id="fiados-total" class="text-xs font-bold bg-slate-100 text-slate-600 px-3 py-2 rounded-lg">Total em aberto: R$ 0,00</span></div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b flex items-center justify-between">
+                    <input type="text" id="fiados-search" oninput="renderFiados()" placeholder="Buscar cliente..." class="w-72 px-3 py-1.5 border rounded-lg text-sm">
+                    <span id="fiados-count" class="text-xs font-semibold text-slate-500">0 registros</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500">
+                            <tr>
+                                <th class="p-3.5">Cliente</th><th class="p-3.5">Telefone</th><th class="p-3.5">Data</th>
+                                <th class="p-3.5 text-right">Valor</th><th class="p-3.5">Observação</th>
+                                <th class="p-3.5 text-center">Status</th><th class="p-3.5 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fiados-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="footer">
+        <span>Desenvolvido por <strong>Delamar Jr</strong> © 2026 - Conectado ao Firebase Cloud</span>
+    </footer>
+
+    <!-- MODAIS -->
+    <!-- Modal Produto -->
+    <div id="modal-product" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden modal-content">
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+                <h3 id="modal-product-title" class="font-bold text-lg">Cadastrar Produto</h3>
+                <button onclick="closeProductModal()"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="product-form" onsubmit="saveProduct(event)" class="p-5 space-y-4">
+                <input type="hidden" id="form-product-id">
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Nome *</label>
+                    <input type="text" id="form-product-name" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">Categoria *</label>
+                        <select id="form-product-category" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                            <option value="Salgados">Salgados</option>
+                            <option value="Bebidas">Bebidas</option>
+                            <option value="Doces">Doces</option>
+                            <option value="Lanches">Lanches</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">Preço (R$) *</label>
+                        <input type="number" step="0.01" min="0.01" id="form-product-price" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Estoque</label>
+                    <input type="number" min="0" id="form-product-stock" placeholder="Deixe em branco para ilimitado" class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">URL da Imagem</label>
+                    <input type="url" id="form-product-image" class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+                <div class="pt-3 flex space-x-3">
+                    <button type="button" onclick="closeProductModal()" class="flex-1 py-2.5 bg-slate-100 font-bold text-sm rounded-lg">Cancelar</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg">Salvar Produto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Item Avulso -->
+    <div id="modal-custom-item" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden modal-content">
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+                <h3 class="font-bold text-lg">Item Personalizado</h3>
+                <button onclick="closeCustomItemModal()"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Nome do Item</label>
+                    <input type="text" id="custom-item-name" placeholder="Ex: Brigadeiro Especial" class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Valor (R$) *</label>
+                    <input type="number" step="0.01" min="0.01" id="custom-item-price" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+                <div class="pt-3 flex space-x-3">
+                    <button type="button" onclick="closeCustomItemModal()" class="flex-1 py-2.5 bg-slate-100 font-bold text-sm rounded-lg">Cancelar</button>
+                    <button type="button" onclick="addCustomItem()" class="flex-1 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg">Adicionar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Comprovante -->
+    <div id="modal-receipt" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden modal-content">
+            <div class="bg-emerald-600 text-white p-5 text-center">
+                <h3 class="font-extrabold text-xl">Venda Concluída!</h3>
+                <p class="text-xs text-emerald-100">Sincronizada na nuvem</p>
+            </div>
+            <div class="p-5 space-y-4">
+                <div class="bg-slate-50 p-3.5 rounded-xl border text-xs space-y-2">
+                    <div class="flex justify-between"><span>Código:</span><span id="receipt-id" class="font-bold">#0000</span></div>
+                    <div class="flex justify-between"><span>Data / Hora:</span><span id="receipt-datetime">--/--</span></div>
+                    <div class="flex justify-between"><span>Pagamento:</span><span id="receipt-payment" class="font-bold uppercase">--</span></div>
+                    <div class="flex justify-between"><span>Vendedor:</span><span id="receipt-operator">-</span></div>
+                </div>
+                <div id="receipt-items-list" class="max-h-40 overflow-y-auto text-xs space-y-1"></div>
+                <div class="border-t pt-2 flex justify-between font-extrabold text-sm">
+                    <span>VALOR TOTAL:</span><span id="receipt-total" class="text-emerald-600">R$ 0,00</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="closeReceiptModal()" class="flex-1 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl">OK</button>
+                    <button onclick="printReceipt()" class="flex-1 py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl">Imprimir</button>
+                    <button onclick="cancelSale()" id="btn-cancel-sale" class="flex-1 py-2.5 bg-rose-600 text-white font-bold text-xs rounded-xl">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Senha Mestre -->
+    <div id="modal-password" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden modal-content">
+            <div class="bg-rose-600 text-white p-4 text-center">
+                <h3 class="font-extrabold text-lg">Autenticação necessária</h3>
+                <p class="text-xs text-rose-100" id="password-modal-message">Digite a senha mestre</p>
+            </div>
+            <div class="p-5 space-y-4">
+                <input type="password" id="master-password-input" placeholder="Senha..." class="w-full px-3 py-2 border rounded-lg text-sm">
+                <div class="flex space-x-3">
+                    <button onclick="closePasswordModal()" class="flex-1 py-2.5 bg-slate-100 font-bold text-sm rounded-lg">Cancelar</button>
+                    <button onclick="validateMasterPassword()" class="flex-1 py-2.5 bg-rose-600 text-white font-bold text-sm rounded-lg">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Configurações -->
+    <div id="modal-settings" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden modal-content">
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+                <h3 class="font-bold text-lg">Configurações</h3>
+                <button onclick="closeSettingsModal()"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="settings-form" onsubmit="saveSettings(event)" class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Nome da Escola</label>
+                    <input type="text" id="settings-school-name" class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Nome do Evento</label>
+                    <input type="text" id="settings-event-name" class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Senha de Bloqueio</label>
+                    <input type="password" id="settings-new-lock-password" placeholder="Nova senha de bloqueio" class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Senha Mestre</label>
+                    <input type="password" id="settings-new-master-password" placeholder="Nova senha mestre" class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Senha Mestre Atual *</label>
+                    <input type="password" id="settings-current-master-password" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+                <div class="pt-3 flex space-x-3">
+                    <button type="button" onclick="closeSettingsModal()" class="flex-1 py-2.5 bg-slate-100 font-bold text-sm rounded-lg">Cancelar</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script JavaScript Principal -->
+    <script>
+        // ============================================================
+        //  FIREBASE INITIALIZATION
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyC8Vmy_Or9xp5rsvvQtmTyubwhhLSLCEF0",
+            authDomain: "pvd-escola-2.firebaseapp.com",
+            projectId: "pvd-escola-2",
+            storageBucket: "pvd-escola-2.firebasestorage.app",
+            messagingSenderId: "199161887344",
+            appId: "1:199161887344:web:eebef0bcefd85d59cb92b5"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Dados Padrão (Caso banco esteja limpo)
+        const DEFAULT_PRODUCTS = [
+            { id: 1, name: 'Coxinha de Frango', category: 'Salgados', price: 6.50, stock: 20, image: 'https://images.unsplash.com/photo-1626848128362-e64e5c464c20?w=300&q=80' },
+            { id: 2, name: 'Pão de Queijo', category: 'Salgados', price: 4.00, stock: 30, image: 'https://images.unsplash.com/photo-1598142714218-41a418d6e355?w=300&q=80' },
+            { id: 3, name: 'Empada de Palmito', category: 'Salgados', price: 6.00, stock: 15, image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=300&q=80' },
+            { id: 4, name: 'Suco de Laranja 300ml', category: 'Bebidas', price: 5.50, stock: 25, image: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=300&q=80' },
+            { id: 5, name: 'Achocolatado Caixinha', category: 'Bebidas', price: 4.50, stock: 18, image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300&q=80' },
+            { id: 6, name: 'Água Mineral 500ml', category: 'Bebidas', price: 3.00, stock: 40, image: 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=300&q=80' },
+            { id: 7, name: 'Brigadeiro Gourmet', category: 'Doces', price: 3.50, stock: 12, image: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=300&q=80' },
+            { id: 8, name: 'Bolo no Pote Choc.', category: 'Doces', price: 8.00, stock: 8, image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=300&q=80' },
+            { id: 9, name: 'Sanduíche Natural', category: 'Lanches', price: 8.50, stock: 10, image: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=300&q=80' }
+        ];
+
+        // Estado do Sistema
+        let products = [];
+        let salesHistory = [];
+        let fiados = [];
+        let cart = [];
+        let selectedCategory = 'Todos';
+        let selectedPaymentMethod = 'pix';
+        let valuesVisible = true;
+        let darkMode = false;
+        let schoolName = '';
+        let eventName = '';
+        let chartInstance = null;
+        let filteredSales = [];
+        let lastSale = null;
+        let currentUserRole = null;
+        let currentOperatorName = '';
+
+        // ============================================================
+        //  ESCUTADORES EM TEMPO REAL DO FIREBASE (MULTIUSUÁRIO)
+        // ============================================================
+        function setupFirebaseListeners() {
+            // Sincroniza Produtos
+            db.collection("produtos").onSnapshot(snapshot => {
+                if (snapshot.empty && products.length === 0) {
+                    restoreDefaultProducts();
+                    return;
+                }
+                products = [];
+                snapshot.forEach(doc => {
+                    products.push({ firestoreId: doc.id, ...doc.data() });
+                });
+                renderCategoryPills();
+                renderPDVProducts();
+                renderAdminProducts();
+            });
+
+            // Sincroniza Vendas
+            db.collection("vendas").orderBy("timestamp", "desc").onSnapshot(snapshot => {
+                salesHistory = [];
+                snapshot.forEach(doc => {
+                    salesHistory.push({ firestoreId: doc.id, ...doc.data() });
+                });
+                filteredSales = [...salesHistory];
+                renderReports();
+                renderChart(getDailyData(filteredSales));
+            });
+
+            // Sincroniza Fiados
+            db.collection("fiados").onSnapshot(snapshot => {
+                fiados = [];
+                snapshot.forEach(doc => {
+                    fiados.push({ firestoreId: doc.id, ...doc.data() });
+                });
+                renderFiados();
+            });
+
+            // Sincroniza Configurações
+            db.collection("configuracoes").doc("geral").onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    schoolName = data.schoolName || 'PDV Escolar';
+                    eventName = data.eventName || 'Sistema de Caixa & Gestão da Cantina';
+                    updateHeaderInfo();
+                }
+            });
+        }
+
+        // ============================================================
+        //  SENHAS & LOGIN
+        // ============================================================
+        function loadPasswordsFromLocalStorage() {
+            return {
+                lockPassword: localStorage.getItem('pdv_escola_lock_password') || '0204',
+                masterPassword: localStorage.getItem('pdv_escola_master_password') || '1997'
+            };
+        }
+
+        function savePasswordsToLocalStorage(lockPass, masterPass) {
+            localStorage.setItem('pdv_escola_lock_password', lockPass);
+            localStorage.setItem('pdv_escola_master_password', masterPass);
+        }
+
+        const USERS = { master: '1997', operador: '1234' };
+
+        function initLogin() {
+            const saved = localStorage.getItem('pdv_escola_user_role');
+            if (saved && USERS[saved]) {
+                currentUserRole = saved;
+                if (currentUserRole === 'operador') {
+                    const savedName = localStorage.getItem('pdv_escola_operator_name');
+                    if (savedName) {
+                        currentOperatorName = savedName;
+                        document.getElementById('login-overlay').classList.add('hidden');
+                        initApp();
+                    } else {
+                        document.getElementById('login-overlay').classList.add('hidden');
+                        document.getElementById('modal-operator-name').classList.add('active');
+                    }
+                } else {
+                    document.getElementById('login-overlay').classList.add('hidden');
+                    initApp();
+                }
+            } else {
+                document.getElementById('login-overlay').classList.remove('hidden');
+            }
+            updateUserBadge();
+        }
+
+        function doLogin() {
+            const username = document.getElementById('login-username').value.trim().toLowerCase();
+            const password = document.getElementById('login-password').value.trim();
+            if (USERS[username] && USERS[username] === password) {
+                currentUserRole = username;
+                localStorage.setItem('pdv_escola_user_role', username);
+                document.getElementById('login-overlay').classList.add('hidden');
+                if (username === 'operador') {
+                    document.getElementById('modal-operator-name').classList.add('active');
+                } else {
+                    initApp();
+                }
+                updateUserBadge();
+            } else {
+                document.getElementById('login-error').style.display = 'block';
+            }
+        }
+
+        function confirmOperatorName() {
+            const name = document.getElementById('operator-name-input').value.trim();
+            if (!name) return alert('Por favor, informe seu nome.');
+            currentOperatorName = name;
+            localStorage.setItem('pdv_escola_operator_name', name);
+            document.getElementById('modal-operator-name').classList.remove('active');
+            initApp();
+        }
+
+        function doLogout() {
+            if (confirm('Deseja sair do sistema?')) {
+                localStorage.removeItem('pdv_escola_user_role');
+                localStorage.removeItem('pdv_escola_operator_name');
+                location.reload();
+            }
+        }
+
+        function updateUserBadge() {
+            const el = document.getElementById('header-user-role');
+            if (currentUserRole) {
+                el.textContent = (currentUserRole === 'operador' && currentOperatorName) ? currentOperatorName : currentUserRole.toUpperCase();
+            }
+        }
+
+        function getDisplayName() {
+            return currentUserRole === 'master' ? 'Master' : (currentOperatorName || 'Operador');
+        }
+
+        // ============================================================
+        //  INICIALIZAÇÃO DA INTERFACE
+        // ============================================================
+        function initApp() {
+            setupFirebaseListeners();
+            loadThemeFromLocalStorage();
+            updateClock();
+            setInterval(updateClock, 1000);
+            setPaymentMethod('pix');
+            lucide.createIcons();
+            applyPermissions();
+            switchTab('pdv');
+        }
+
+        function applyPermissions() {
+            const isMaster = currentUserRole === 'master';
+            ['tab-btn-relatorios', 'tab-btn-produtos', 'btn-export-excel', 'btn-clear-history', 'btn-settings'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = isMaster ? '' : 'none';
+            });
+        }
+
+        function lockSystem() {
+            document.getElementById('lock-overlay').classList.add('active');
+            localStorage.setItem('pdv_escola_locked', 'true');
+        }
+
+        function unlockSystem() {
+            const pass = document.getElementById('lock-password-input').value;
+            const passwords = loadPasswordsFromLocalStorage();
+            if (pass === passwords.lockPassword) {
+                document.getElementById('lock-overlay').classList.remove('active');
+                localStorage.setItem('pdv_escola_locked', 'false');
+                showToast('🔓 Desbloqueado!');
+            } else {
+                document.getElementById('lock-error').style.display = 'block';
+            }
+        }
+
+        function showToast(message) {
+            const el = document.getElementById('toast');
+            el.textContent = message;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 2500);
+        }
+
+        function playDing() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = 800; gain.gain.value = 0.3;
+                osc.start(); setTimeout(() => osc.stop(), 150);
+            } catch (e) {}
+        }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock-time').textContent = now.toLocaleTimeString('pt-BR');
+            document.getElementById('clock-date').textContent = now.toLocaleDateString('pt-BR');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
+            ['view-pdv', 'view-relatorios', 'view-produtos', 'view-fiados'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById(`tab-btn-${tab}`).classList.add('active-tab');
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        // ============================================================
+        //  PDV & CARRINHO
+        // ============================================================
+        function renderCategoryPills() {
+            const categories = ['Todos', ...new Set(products.map(p => p.category))];
+            const container = document.getElementById('category-pills');
+            container.innerHTML = categories.map(cat => `
+                <button onclick="filterCategory('${cat}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}">
+                    ${cat}
+                </button>
+            `).join('');
+        }
+
+        function filterCategory(cat) {
+            selectedCategory = cat;
+            renderCategoryPills();
+            renderPDVProducts();
+        }
+
+        function renderPDVProducts() {
+            const search = document.getElementById('pdv-search').value.toLowerCase();
+            const container = document.getElementById('pdv-products-grid');
+            const filtered = products.filter(p => (selectedCategory === 'Todos' || p.category === selectedCategory) && p.name.toLowerCase().includes(search));
+
+            if (!filtered.length) {
+                container.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400"><p>Nenhum produto encontrado</p></div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(p => `
+                <div onclick="addToCart(${p.id})" class="product-card bg-white border border-slate-200 rounded-xl overflow-hidden cursor-pointer p-3 flex flex-col justify-between">
+                    <div class="aspect-video w-full rounded-lg overflow-hidden bg-slate-100 mb-2 relative">
+                        <img src="${p.image || 'https://via.placeholder.com/300'}" class="w-full h-full object-cover">
+                        <span class="absolute top-1.5 right-1.5 bg-slate-900/80 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">${p.category}</span>
+                        ${p.stock !== null && p.stock !== undefined ? `<span class="absolute bottom-1.5 right-1.5 bg-slate-900/80 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">${p.stock} un</span>` : ''}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-sm leading-snug line-clamp-2">${p.name}</h4>
+                        <div class="flex items-center justify-between mt-2 pt-2 border-t">
+                            <span class="text-base font-extrabold text-blue-600">R$ ${p.price.toFixed(2).replace('.', ',')}</span>
+                            <span class="bg-blue-50 text-blue-600 p-1.5 rounded-lg"><i data-lucide="plus" class="w-4 h-4"></i></span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function addToCart(id) {
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+            if (product.stock !== null && product.stock !== undefined && product.stock <= 0) {
+                return showToast('⚠️ Produto sem estoque!');
+            }
+            const existing = cart.find(item => item.id === id);
+            if (existing) {
+                if (product.stock !== null && product.stock !== undefined && existing.quantity + 1 > product.stock) {
+                    return showToast('⚠️ Limite de estoque atingido!');
+                }
+                existing.quantity += 1;
+            } else {
+                cart.push({ id: product.id, name: product.name, price: product.price, quantity: 1, firestoreId: product.firestoreId });
+            }
+            renderCart();
+        }
+
+        function updateCartQuantity(id, delta) {
+            const item = cart.find(i => i.id === id);
+            if (!item) return;
+            item.quantity += delta;
+            if (item.quantity <= 0) cart = cart.filter(i => i.id !== id);
+            renderCart();
+        }
+
+        function clearCart() { cart = []; renderCart(); }
+
+        function getCartTotal() {
+            let total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            if (selectedPaymentMethod === 'dinheiro') {
+                const discount = parseFloat(document.getElementById('cash-discount').value) || 0;
+                total = Math.max(0, total - discount);
+            }
+            return total;
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items-container');
+            const total = getCartTotal();
+            document.getElementById('cart-total-price').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+            document.getElementById('cart-items-count').textContent = `${cart.reduce((s, i) => s + i.quantity, 0)} itens no carrinho`;
+
+            if (!cart.length) {
+                container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center"><p class="font-bold">Carrinho Vazio</p></div>`;
+                return;
+            }
+
+            container.innerHTML = cart.map(item => `
+                <div class="py-3 flex items-center justify-between gap-2">
+                    <div class="flex-1">
+                        <h5 class="font-bold text-slate-800 text-xs">${item.name}</h5>
+                        <p class="text-[11px] text-slate-500">R$ ${item.price.toFixed(2).replace('.', ',')}</p>
+                    </div>
+                    <div class="flex items-center space-x-1.5 bg-slate-100 p-1 rounded-lg">
+                        <button onclick="updateCartQuantity(${item.id}, -1)" class="w-6 h-6 bg-white rounded font-bold text-xs">-</button>
+                        <span class="w-6 text-center font-extrabold text-xs">${item.quantity}</span>
+                        <button onclick="updateCartQuantity(${item.id}, 1)" class="w-6 h-6 bg-white rounded font-bold text-xs">+</button>
+                    </div>
+                    <div class="text-right pl-2">
+                        <span class="block font-extrabold text-sm">R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
+                    </div>
+                </div>
+            `).join('');
+            calculateChange();
+        }
+
+        function setPaymentMethod(method) {
+            selectedPaymentMethod = method;
+            document.querySelectorAll('.payment-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById(`pay-btn-${method}`).classList.add('selected');
+            document.getElementById('fiado-fields-box').classList.toggle('hidden', method !== 'fiado');
+            document.getElementById('cash-calculator-box').classList.toggle('hidden', method !== 'dinheiro');
+            renderCart();
+        }
+
+        function calculateChange() {
+            if (selectedPaymentMethod !== 'dinheiro') return;
+            const total = getCartTotal();
+            const received = parseFloat(document.getElementById('cash-received').value) || 0;
+            const change = received - total;
+            document.getElementById('cash-change-display').textContent = change >= 0 ? `R$ ${change.toFixed(2).replace('.', ',')}` : `Falta R$ ${Math.abs(change).toFixed(2).replace('.', ',')}`;
+        }
+
+        function setQuickCash(value) {
+            const total = getCartTotal();
+            document.getElementById('cash-received').value = value === 'exact' ? total.toFixed(2) : value;
+            calculateChange();
+        }
+
+        // ============================================================
+        //  FINALIZAR VENDA (PERSISTÊNCIA NO FIREBASE)
+        // ============================================================
+        async function finalizeSale() {
+            if (!cart.length) return showToast('⚠️ Carrinho vazio!');
+            
+            const total = getCartTotal();
+            let received = total, change = 0, discount = 0;
+
+            if (selectedPaymentMethod === 'dinheiro') {
+                received = parseFloat(document.getElementById('cash-received').value) || 0;
+                if (received < total) return alert('Valor recebido é menor que o total!');
+                change = received - total;
+                discount = parseFloat(document.getElementById('cash-discount').value) || 0;
+            }
+
+            if (selectedPaymentMethod === 'fiado') {
+                const name = document.getElementById('fiado-name').value.trim();
+                const phone = document.getElementById('fiado-phone').value.trim();
+                if (!name || !phone) return alert('Preencha Nome e Telefone do cliente.');
+            }
+
+            // Atualiza Estoque na Nuvem
+            for (const item of cart) {
+                if (item.firestoreId) {
+                    const prodRef = db.collection("produtos").doc(item.firestoreId);
+                    const doc = await prodRef.get();
+                    if (doc.exists && doc.data().stock !== null && doc.data().stock !== undefined) {
+                        const newStock = Math.max(0, doc.data().stock - item.quantity);
+                        await prodRef.update({ stock: newStock });
+                    }
+                }
+            }
+
+            const now = new Date();
+            const saleRecord = {
+                id: 'V' + Math.floor(100000 + Math.random() * 900000),
+                datetime: now.toLocaleString('pt-BR'),
+                timestamp: now.getTime(),
+                items: [...cart],
+                total,
+                paymentMethod: selectedPaymentMethod,
+                cashReceived: received,
+                changeGiven: change,
+                discount,
+                fiado: selectedPaymentMethod === 'fiado' ? {
+                    name: document.getElementById('fiado-name').value.trim(),
+                    phone: document.getElementById('fiado-phone').value.trim(),
+                    obs: document.getElementById('fiado-obs').value.trim()
+                } : null,
+                operator: getDisplayName()
+            };
+
+            // Salva Venda no Firebase
+            const saleDoc = await db.collection("vendas").add(saleRecord);
+            saleRecord.firestoreId = saleDoc.id;
+            lastSale = saleRecord;
+
+            // Se for Fiado, salva na coleção de fiados
+            if (selectedPaymentMethod === 'fiado') {
+                await db.collection("fiados").add({
+                    id: saleRecord.id,
+                    name: saleRecord.fiado.name,
+                    phone: saleRecord.fiado.phone,
+                    obs: saleRecord.fiado.obs || '',
+                    date: saleRecord.datetime,
+                    total: saleRecord.total,
+                    paid: false,
+                    operator: getDisplayName()
+                });
+            }
+
+            showReceiptModal(saleRecord);
+            playDing();
+            showToast('✅ Venda sincronizada na nuvem!');
+            cart = [];
+            renderCart();
+        }
+
+        // ============================================================
+        //  COMPROVANTE & AÇÕES DE VENDAS
+        // ============================================================
+        function showReceiptModal(sale) {
+            document.getElementById('receipt-id').textContent = `#${sale.id}`;
+            document.getElementById('receipt-datetime').textContent = sale.datetime;
+            document.getElementById('receipt-payment').textContent = sale.paymentMethod.toUpperCase();
+            document.getElementById('receipt-total').textContent = `R$ ${sale.total.toFixed(2).replace('.', ',')}`;
+            document.getElementById('receipt-operator').textContent = sale.operator || '-';
+            document.getElementById('receipt-items-list').innerHTML = sale.items.map(i => `<div class="flex justify-between"><span>${i.quantity}x ${i.name}</span><span>R$ ${(i.price * i.quantity).toFixed(2).replace('.', ',')}</span></div>`).join('');
+            document.getElementById('modal-receipt').classList.remove('hidden');
+        }
+
+        function closeReceiptModal() { document.getElementById('modal-receipt').classList.add('hidden'); }
+        function printReceipt() { window.print(); }
+
+        // ============================================================
+        //  ADMINISTRAÇÃO DE PRODUTOS NO FIREBASE
+        // ============================================================
+        function renderAdminProducts() {
+            const search = document.getElementById('admin-product-search').value.toLowerCase();
+            const filtered = products.filter(p => p.name.toLowerCase().includes(search) || p.category.toLowerCase().includes(search));
+            document.getElementById('admin-product-count').textContent = `${products.length} produto(s)`;
+            
+            document.getElementById('admin-products-table').innerHTML = filtered.map(p => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3.5"><img src="${p.image || 'https://via.placeholder.com/50'}" class="w-10 h-10 object-cover rounded-lg border"></td>
+                    <td class="p-3.5 font-bold text-slate-800 text-sm">${p.name}</td>
+                    <td class="p-3.5 text-xs text-slate-600"><span class="bg-slate-100 border px-2.5 py-1 rounded-md font-medium">${p.category}</span></td>
+                    <td class="p-3.5 text-right font-extrabold text-sm text-slate-800">R$ ${p.price.toFixed(2).replace('.', ',')}</td>
+                    <td class="p-3.5 text-center font-bold text-sm">${p.stock !== null && p.stock !== undefined ? p.stock : '∞'}</td>
+                    <td class="p-3.5 text-center"><span class="bg-emerald-100 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase">Ativo</span></td>
+                    <td class="p-3.5 text-center space-x-2">
+                        <button onclick="openProductModal('${p.firestoreId}')" class="text-blue-600 font-semibold text-xs">Editar</button>
+                        <button onclick="deleteProduct('${p.firestoreId}')" class="text-rose-600 font-semibold text-xs">Excluir</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openProductModal(docId = null) {
+            document.getElementById('product-form').reset();
+            document.getElementById('form-product-id').value = docId || '';
+            if (docId) {
+                const p = products.find(x => x.firestoreId === docId);
+                if (p) {
+                    document.getElementById('form-product-name').value = p.name;
+                    document.getElementById('form-product-category').value = p.category;
+                    document.getElementById('form-product-price').value = p.price;
+                    document.getElementById('form-product-stock').value = p.stock !== null && p.stock !== undefined ? p.stock : '';
+                    document.getElementById('form-product-image').value = p.image || '';
+                }
+            }
+            document.getElementById('modal-product').classList.remove('hidden');
+        }
+
+        function closeProductModal() { document.getElementById('modal-product').classList.add('hidden'); }
+
+        async function saveProduct(e) {
+            e.preventDefault();
+            const docId = document.getElementById('form-product-id').value;
+            const name = document.getElementById('form-product-name').value.trim();
+            const category = document.getElementById('form-product-category').value;
+            const price = parseFloat(document.getElementById('form-product-price').value);
+            const stock = document.getElementById('form-product-stock').value.trim();
+            const stockNum = stock === '' ? null : parseInt(stock);
+            const image = document.getElementById('form-product-image').value.trim();
+
+            const payload = {
+                id: docId ? products.find(p => p.firestoreId === docId).id : Date.now(),
+                name, category, price, stock: stockNum,
+                image: image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&q=80'
+            };
+
+            if (docId) {
+                await db.collection("produtos").doc(docId).update(payload);
+            } else {
+                await db.collection("produtos").add(payload);
+            }
+            closeProductModal();
+            showToast('✅ Produto salvo na nuvem!');
+        }
+
+        async function deleteProduct(docId) {
+            if (confirm('Excluir este produto?')) {
+                await db.collection("produtos").doc(docId).delete();
+                showToast('🗑️ Produto removido!');
+            }
+        }
+
+        async function restoreDefaultProducts() {
+            if (confirm('Restaurar produtos padrão na nuvem?')) {
+                for (const p of DEFAULT_PRODUCTS) {
+                    await db.collection("produtos").add(p);
+                }
+                showToast('✅ Produtos carregados!');
+            }
+        }
+
+        // ============================================================
+        //  FIADOS NO FIREBASE
+        // ============================================================
+        function renderFiados() {
+            const search = document.getElementById('fiados-search').value.toLowerCase();
+            const filtered = fiados.filter(f => f.name.toLowerCase().includes(search) || f.phone.includes(search));
+            document.getElementById('fiados-count').textContent = `${filtered.length} registro(s)`;
+            const totalAberto = fiados.filter(f => !f.paid).reduce((s, f) => s + f.total, 0);
+            document.getElementById('fiados-total').textContent = `Total em aberto: R$ ${totalAberto.toFixed(2).replace('.', ',')}`;
+
+            document.getElementById('fiados-table-body').innerHTML = filtered.map(f => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3.5 font-bold text-slate-800 text-sm">${f.name}</td>
+                    <td class="p-3.5 text-xs text-slate-600">${f.phone}</td>
+                    <td class="p-3.5 text-xs text-slate-600">${f.date}</td>
+                    <td class="p-3.5 text-right font-extrabold text-sm text-slate-800">R$ ${f.total.toFixed(2).replace('.', ',')}</td>
+                    <td class="p-3.5 text-xs text-slate-600">${f.obs || '-'}</td>
+                    <td class="p-3.5 text-center">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${f.paid ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                            ${f.paid ? 'Pago' : 'Pendente'}
+                        </span>
+                    </td>
+                    <td class="p-3.5 text-center space-x-2">
+                        ${!f.paid ? `<button onclick="markFiadoAsPaid('${f.firestoreId}')" class="text-emerald-600 font-semibold text-xs">Marcar Pago</button>` : ''}
+                        <button onclick="deleteFiado('${f.firestoreId}')" class="text-rose-600 font-semibold text-xs">Excluir</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function markFiadoAsPaid(docId) {
+            await db.collection("fiados").doc(docId).update({ paid: true });
+            showToast('✅ Fiado marcado como pago!');
+        }
+
+        async function deleteFiado(docId) {
+            await db.collection("fiados").doc(docId).delete();
+            showToast('🗑️ Fiado removido!');
+        }
+
+        // ============================================================
+        //  RELATÓRIOS & GRÁFICOS
+        // ============================================================
+        function renderReports() {
+            if (currentUserRole !== 'master') return;
+            const sales = filteredSales.length ? filteredSales : salesHistory;
+            const totalSum = sales.reduce((s, v) => s + v.total, 0);
+            
+            document.getElementById('kpi-total-sales').textContent = `R$ ${totalSum.toFixed(2).replace('.', ',')}`;
+            document.getElementById('kpi-sales-count').textContent = `${sales.length} venda(s)`;
+            
+            const tableBody = document.getElementById('sales-table-body');
+            document.getElementById('sales-table-count').textContent = `Total: ${sales.length} registros`;
+
+            tableBody.innerHTML = sales.map(s => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 font-mono font-bold text-xs">#${s.id}</td>
+                    <td class="p-3 text-xs whitespace-nowrap">${s.datetime}</td>
+                    <td class="p-3 text-xs max-w-xs truncate">${s.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</td>
+                    <td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-100">${s.paymentMethod}</span></td>
+                    <td class="p-3 text-right font-extrabold text-sm">R$ ${s.total.toFixed(2).replace('.', ',')}</td>
+                    <td class="p-3 text-center text-xs">${s.operator || '-'}</td>
+                    <td class="p-3 text-center"><button onclick="deleteSale('${s.firestoreId}')" class="text-rose-500 text-xs font-semibold">Excluir</button></td>
+                </tr>
+            `).join('');
+        }
+
+        async function deleteSale(docId) {
+            if (confirm('Excluir este registro de venda?')) {
+                await db.collection("vendas").doc(docId).delete();
+                showToast('🗑️ Venda excluída!');
+            }
+        }
+
+        function getDailyData(sales) {
+            const map = {}; const hoje = new Date();
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(hoje); d.setDate(d.getDate() - i);
+                map[d.toISOString().slice(0,10)] = 0;
+            }
+            sales.forEach(s => {
+                const parts = s.datetime.split(' ')[0].split('/');
+                if(parts.length === 3) {
+                    const key = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+                    if (map[key] !== undefined) map[key] += s.total;
+                }
+            });
+            return { labels: Object.keys(map).sort(), values: Object.keys(map).sort().map(k => map[k]) };
+        }
+
+        function renderChart(data) {
+            const ctx = document.getElementById('daily-chart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels.map(d => { const [y,m,day] = d.split('-'); return `${day}/${m}`; }),
+                    datasets: [{ label: 'Faturamento (R$)', data: data.values, backgroundColor: 'rgba(59,130,246,0.6)' }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // ============================================================
+        //  TEMA & AUXILIARES
+        // ============================================================
+        function loadThemeFromLocalStorage() {
+            if (localStorage.getItem('pdv_escola_theme') === 'dark') document.body.classList.add('dark-mode');
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('pdv_escola_theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+        }
+
+        function updateHeaderInfo() {
+            document.getElementById('header-school-name').textContent = schoolName;
+            document.getElementById('header-event-name').textContent = eventName;
+        }
+
+        function toggleValuesVisibility() {
+            valuesVisible = !valuesVisible;
+            document.querySelectorAll('.value-hidden').forEach(el => el.classList.toggle('hidden-value', !valuesVisible));
+        }
+
+        // Eventos DOM
+        document.addEventListener('DOMContentLoaded', () => {
+            initLogin();
+            document.getElementById('login-password')?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+        });
+    </script>
+</body>
+</html>
