@@ -239,10 +239,7 @@
             <button onclick="doLogout()" class="text-slate-400 hover:text-white transition" title="Sair"><i data-lucide="log-out" class="w-5 h-5"></i></button>
             <button onclick="lockSystem()" class="text-slate-400 hover:text-white transition" title="Bloquear sistema"><i data-lucide="lock" class="w-5 h-5"></i></button>
             <button onclick="toggleTheme()" class="theme-toggle text-slate-400 hover:text-white" title="Alternar tema"><i data-lucide="moon" id="theme-icon" class="w-5 h-5"></i></button>
-            
-            <!-- Botão Modo Celular inserido aqui -->
             <button onclick="toggleMobileMode()" class="text-slate-400 hover:text-white transition" title="Modo Celular/Tablet"><i data-lucide="smartphone" class="w-5 h-5"></i></button>
-            
             <button onclick="openSettingsModal()" id="btn-settings" class="text-slate-400 hover:text-white transition" title="Configurações"><i data-lucide="settings" class="w-5 h-5"></i></button>
             <div class="text-right hidden sm:block">
                 <p id="clock-time" class="text-sm font-bold leading-none text-slate-200">00:00:00</p>
@@ -282,7 +279,7 @@
             </div>
 
             <!-- Carrinho e Pagamento -->
-            <div class="col-span-12 lg:col-span-5 xl:col-span-4 flex flex-col h-full bg-white shadow-lg">
+            <div class="col-span-12 lg:col-span-5 xl:col-span-4 flex flex-col h-full bg-white shadow-lg overflow-hidden shrink-0 lg:shrink">
                 <div class="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
                     <div class="flex items-center space-x-2">
                         <i data-lucide="shopping-bag" class="w-5 h-5 text-blue-600"></i>
@@ -311,16 +308,16 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Forma de Pagamento</label>
                         <div class="grid grid-cols-4 gap-2">
-                            <button onclick="setPaymentMethod('pix')" id="pay-btn-pix" class="payment-btn p-2 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
+                            <button onclick="setPaymentMethod('pix')" id="pay-btn-pix" class="payment-btn p-2 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-[11px] font-medium">
                                 <i data-lucide="qr-code" class="w-4 h-4 mb-1 text-emerald-600"></i><span>PIX</span>
                             </button>
-                            <button onclick="setPaymentMethod('cartao')" id="pay-btn-cartao" class="payment-btn p-2 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
+                            <button onclick="setPaymentMethod('cartao')" id="pay-btn-cartao" class="payment-btn p-2 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-[11px] font-medium">
                                 <i data-lucide="credit-card" class="w-4 h-4 mb-1 text-indigo-600"></i><span>Cartão</span>
                             </button>
-                            <button onclick="setPaymentMethod('dinheiro')" id="pay-btn-dinheiro" class="payment-btn p-2 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
+                            <button onclick="setPaymentMethod('dinheiro')" id="pay-btn-dinheiro" class="payment-btn p-2 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-[11px] font-medium">
                                 <i data-lucide="banknote" class="w-4 h-4 mb-1 text-amber-600"></i><span>Dinheiro</span>
                             </button>
-                            <button onclick="setPaymentMethod('fiado')" id="pay-btn-fiado" class="payment-btn p-2 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-xs font-medium">
+                            <button onclick="setPaymentMethod('fiado')" id="pay-btn-fiado" class="payment-btn p-2 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-blue-400 transition flex flex-col items-center justify-center text-[11px] font-medium">
                                 <i data-lucide="users" class="w-4 h-4 mb-1 text-rose-600"></i><span>Fiado</span>
                             </button>
                         </div>
@@ -330,7 +327,7 @@
                     <div id="fiado-fields-box" class="hidden bg-rose-50 border border-rose-200 p-2.5 rounded-xl space-y-2">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-bold text-rose-900 uppercase">Dados do Cliente</span>
-                            <span class="text-xs text-rose-700 font-semibold">* obrigatório</span>
+                            <span class="text-[10px] text-rose-700 font-semibold">* obrigatório</span>
                         </div>
                         <div><input type="text" id="fiado-name" placeholder="Nome Completo *" class="w-full px-2.5 py-1.5 border border-rose-300 rounded-lg text-xs bg-white"></div>
                         <div><input type="tel" id="fiado-phone" placeholder="Telefone *" class="w-full px-2.5 py-1.5 border border-rose-300 rounded-lg text-xs bg-white"></div>
@@ -342,11 +339,11 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-[10px] font-semibold text-slate-600 block mb-0.5">Recebido (R$):</label>
-                                <input type="number" step="0.01" id="cash-received" oninput="calculateChange()" placeholder="0,00" class="w-full px-2 py-1 border border-amber-300 rounded-lg text-sm font-bold text-slate-800 bg-white">
+                                <input type="number" step="0.01" id="cash-received" oninput="calculateChange()" placeholder="0,00" class="w-full px-2 py-1 border border-amber-300 rounded-lg text-xs sm:text-sm font-bold text-slate-800 bg-white">
                             </div>
                             <div>
                                 <label class="text-[10px] font-semibold text-slate-600 block mb-0.5">Troco:</label>
-                                <div id="cash-change-display" class="w-full px-2 py-1 bg-amber-100 border border-amber-300 rounded-lg text-sm font-extrabold text-amber-900 flex items-center">R$ 0,00</div>
+                                <div id="cash-change-display" class="w-full px-2 py-1 bg-amber-100 border border-amber-300 rounded-lg text-xs sm:text-sm font-extrabold text-amber-900 flex items-center">R$ 0,00</div>
                             </div>
                         </div>
                         <div>
@@ -354,15 +351,15 @@
                             <input type="number" step="0.01" min="0" id="cash-discount" oninput="calculateChange()" placeholder="0,00" class="w-24 px-2 py-1 border border-amber-300 rounded-lg text-xs font-bold bg-white">
                         </div>
                         <div class="flex space-x-1 overflow-x-auto pt-0.5">
-                            <button onclick="setQuickCash('exact')" class="px-2 py-0.5 bg-amber-200/70 text-amber-900 text-[10px] font-bold rounded">Exato</button>
-                            <button onclick="setQuickCash(5)" class="px-2 py-0.5 bg-amber-200/70 text-amber-900 text-[10px] font-bold rounded">R$ 5</button>
-                            <button onclick="setQuickCash(10)" class="px-2 py-0.5 bg-amber-200/70 text-amber-900 text-[10px] font-bold rounded">R$ 10</button>
-                            <button onclick="setQuickCash(20)" class="px-2 py-0.5 bg-amber-200/70 text-amber-900 text-[10px] font-bold rounded">R$ 20</button>
-                            <button onclick="setQuickCash(50)" class="px-2 py-0.5 bg-amber-200/70 text-amber-900 text-[10px] font-bold rounded">R$ 50</button>
+                            <button onclick="setQuickCash('exact')" class="px-2 py-1 bg-amber-200/70 text-amber-900 text-[10px] font-bold rounded">Exato</button>
+                            <button onclick="setQuickCash(5)" class="px-2 py-1 bg-amber-200/70 text-amber-900 text-[10px] font-bold rounded">R$ 5</button>
+                            <button onclick="setQuickCash(10)" class="px-2 py-1 bg-amber-200/70 text-amber-900 text-[10px] font-bold rounded">R$ 10</button>
+                            <button onclick="setQuickCash(20)" class="px-2 py-1 bg-amber-200/70 text-amber-900 text-[10px] font-bold rounded">R$ 20</button>
+                            <button onclick="setQuickCash(50)" class="px-2 py-1 bg-amber-200/70 text-amber-900 text-[10px] font-bold rounded">R$ 50</button>
                         </div>
                     </div>
 
-                    <button onclick="finalizeSale()" id="btn-checkout" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm rounded-xl shadow-lg transition flex items-center justify-center space-x-2 shrink-0">
+                    <button onclick="finalizeSale()" id="btn-checkout" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm sm:text-base rounded-xl shadow-lg transition flex items-center justify-center space-x-2 shrink-0">
                         <i data-lucide="check-circle" class="w-5 h-5"></i>
                         <span>FINALIZAR VENDA</span>
                     </button>
@@ -639,8 +636,17 @@
                     <div class="flex justify-between"><span>Pagamento:</span><span id="receipt-payment" class="font-bold uppercase">--</span></div>
                     <div class="flex justify-between"><span>Vendedor:</span><span id="receipt-operator">-</span></div>
                 </div>
+                
                 <div id="receipt-items-list" class="max-h-40 overflow-y-auto text-xs space-y-1"></div>
-                <div class="border-t pt-2 flex justify-between font-extrabold text-sm">
+                
+                <!-- ÁREA DO QR CODE PIX -->
+                <div id="receipt-pix-container" class="hidden border-t border-slate-200 pt-3 flex flex-col items-center justify-center">
+                    <p class="text-[11px] font-bold text-slate-500 mb-1 uppercase">Pague com PIX</p>
+                    <img id="receipt-pix-img" src="" alt="QR Code PIX" class="w-32 h-32 rounded-lg border border-slate-200 p-1 mb-1 hidden">
+                    <p id="receipt-pix-key" class="text-[10px] text-slate-500 font-medium"></p>
+                </div>
+
+                <div class="border-t border-slate-200 pt-2 flex justify-between font-extrabold text-sm">
                     <span>VALOR TOTAL:</span><span id="receipt-total" class="text-emerald-600">R$ 0,00</span>
                 </div>
                 <div class="flex gap-2">
@@ -670,33 +676,60 @@
     </div>
 
     <!-- Modal Configurações -->
-    <div id="modal-settings" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden modal-content">
+    <div id="modal-settings" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden modal-content my-8">
             <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
                 <h3 class="font-bold text-lg">Configurações</h3>
                 <button onclick="closeSettingsModal()"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <form id="settings-form" onsubmit="saveSettings(event)" class="p-5 space-y-4">
-                <div>
-                    <label class="block text-xs font-bold uppercase mb-1">Nome da Escola</label>
-                    <input type="text" id="settings-school-name" class="w-full px-3 py-2 border rounded-lg text-sm">
+                
+                <div class="border-b border-slate-200 pb-4">
+                    <h4 class="font-bold text-sm text-slate-600 mb-3">Informações da Cantina</h4>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold uppercase mb-1">Nome da Escola</label>
+                            <input type="text" id="settings-school-name" class="w-full px-3 py-2 border rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase mb-1">Nome do Evento</label>
+                            <input type="text" id="settings-event-name" class="w-full px-3 py-2 border rounded-lg text-sm">
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase mb-1">Nome do Evento</label>
-                    <input type="text" id="settings-event-name" class="w-full px-3 py-2 border rounded-lg text-sm">
+
+                <div class="border-b border-slate-200 pb-4">
+                    <h4 class="font-bold text-sm text-slate-600 mb-3">Pagamento (PIX)</h4>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold uppercase mb-1">URL do QR Code PIX</label>
+                            <input type="url" id="settings-pix-url" placeholder="Ex: https://meusite.com/qrcode.png" class="w-full px-3 py-2 border rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase mb-1">Chave PIX (Texto)</label>
+                            <input type="text" id="settings-pix-key" placeholder="Ex: email@escola.com.br" class="w-full px-3 py-2 border rounded-lg text-sm">
+                        </div>
+                    </div>
                 </div>
+
                 <div>
-                    <label class="block text-xs font-bold uppercase mb-1">Senha de Bloqueio</label>
-                    <input type="password" id="settings-new-lock-password" placeholder="Nova senha de bloqueio" class="w-full px-3 py-2 border rounded-lg text-sm">
+                    <h4 class="font-bold text-sm text-slate-600 mb-3">Segurança</h4>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold uppercase mb-1">Senha de Bloqueio</label>
+                            <input type="password" id="settings-new-lock-password" placeholder="Nova senha de bloqueio" class="w-full px-3 py-2 border rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase mb-1">Senha Mestre</label>
+                            <input type="password" id="settings-new-master-password" placeholder="Nova senha mestre" class="w-full px-3 py-2 border rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase mb-1 text-rose-600">Senha Mestre Atual *</label>
+                            <input type="password" id="settings-current-master-password" placeholder="Necessária para salvar" required class="w-full px-3 py-2 border border-rose-300 rounded-lg text-sm">
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase mb-1">Senha Mestre</label>
-                    <input type="password" id="settings-new-master-password" placeholder="Nova senha mestre" class="w-full px-3 py-2 border rounded-lg text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase mb-1">Senha Mestre Atual *</label>
-                    <input type="password" id="settings-current-master-password" required class="w-full px-3 py-2 border rounded-lg text-sm">
-                </div>
+
                 <div class="pt-3 flex space-x-3">
                     <button type="button" onclick="closeSettingsModal()" class="flex-1 py-2.5 bg-slate-100 font-bold text-sm rounded-lg">Cancelar</button>
                     <button type="submit" class="flex-1 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg">Salvar</button>
@@ -746,6 +779,8 @@
         let darkMode = false;
         let schoolName = '';
         let eventName = '';
+        let pixQrCodeUrl = '';
+        let pixKey = '';
         let chartInstance = null;
         let filteredSales = [];
         let lastSale = null;
@@ -797,6 +832,8 @@
                     const data = doc.data();
                     schoolName = data.schoolName || 'PDV Escolar';
                     eventName = data.eventName || 'Sistema de Caixa & Gestão da Cantina';
+                    pixQrCodeUrl = data.pixQrCodeUrl || '';
+                    pixKey = data.pixKey || '';
                     updateHeaderInfo();
                 }
             });
@@ -816,7 +853,7 @@
             localStorage.setItem('pdv_escola_lock_password', lockPass);
             localStorage.setItem('pdv_escola_master_password', masterPass);
         }
-        
+
         function ensurePasswordsExist() {
             const passwords = loadPasswordsFromLocalStorage();
             if (!localStorage.getItem('pdv_escola_lock_password') || !localStorage.getItem('pdv_escola_master_password')) {
@@ -1241,6 +1278,27 @@
             document.getElementById('receipt-total').textContent = `R$ ${sale.total.toFixed(2).replace('.', ',')}`;
             document.getElementById('receipt-operator').textContent = sale.operator || '-';
             document.getElementById('receipt-items-list').innerHTML = sale.items.map(i => `<div class="flex justify-between"><span>${i.quantity}x ${i.name}</span><span>R$ ${(i.price * i.quantity).toFixed(2).replace('.', ',')}</span></div>`).join('');
+            
+            // Lógica do PIX QR Code Dinâmico
+            const pixContainer = document.getElementById('receipt-pix-container');
+            const pixImg = document.getElementById('receipt-pix-img');
+            const pixKeyText = document.getElementById('receipt-pix-key');
+
+            if (pixContainer) {
+                if (sale.paymentMethod === 'pix') {
+                    pixContainer.classList.remove('hidden');
+                    if (pixQrCodeUrl) {
+                        pixImg.src = pixQrCodeUrl;
+                        pixImg.classList.remove('hidden');
+                    } else {
+                        pixImg.classList.add('hidden');
+                    }
+                    pixKeyText.textContent = pixKey ? `Chave: ${pixKey}` : 'Chave PIX não configurada';
+                } else {
+                    pixContainer.classList.add('hidden');
+                }
+            }
+
             document.getElementById('modal-receipt').classList.remove('hidden');
         }
 
@@ -1553,6 +1611,11 @@
             if (currentUserRole !== 'master') return;
             document.getElementById('settings-school-name').value = schoolName;
             document.getElementById('settings-event-name').value = eventName;
+            
+            // Popula as novas opções de PIX
+            document.getElementById('settings-pix-url').value = pixQrCodeUrl;
+            document.getElementById('settings-pix-key').value = pixKey;
+
             document.getElementById('settings-current-master-password').value = '';
             document.getElementById('settings-new-lock-password').value = '';
             document.getElementById('settings-new-master-password').value = '';
@@ -1591,8 +1654,15 @@
             
             const newSchoolName = document.getElementById('settings-school-name').value.trim() || 'PDV Escolar';
             const newEventName = document.getElementById('settings-event-name').value.trim() || 'Sistema de Caixa & Gestão da Cantina';
+            const newPixUrl = document.getElementById('settings-pix-url').value.trim();
+            const newPixKey = document.getElementById('settings-pix-key').value.trim();
             
-            await db.collection("configuracoes").doc("geral").set({ schoolName: newSchoolName, eventName: newEventName });
+            await db.collection("configuracoes").doc("geral").set({ 
+                schoolName: newSchoolName, 
+                eventName: newEventName,
+                pixQrCodeUrl: newPixUrl,
+                pixKey: newPixKey
+            });
             closeSettingsModal();
             showToast('✅ Configurações salvas!');
         }
@@ -1718,7 +1788,7 @@
         }
 
         // ============================================================
-        //  ATALHOS E EVENTOS DE TECLADO (RESTAURADOS)
+        //  ATALHOS E EVENTOS DE TECLADO
         // ============================================================
         function setupKeyboardShortcuts() {
             document.addEventListener('keydown', (e) => {
