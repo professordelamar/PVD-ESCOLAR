@@ -100,6 +100,30 @@
         #modal-operator-name.active, #modal-edit-fiado.active { display: flex; }
         .modal-box { background: white; padding: 30px; border-radius: 20px; max-width: 400px; width: 90%; box-shadow: 0 20px 40px -12px rgba(0,0,0,0.3); }
         body.dark-mode .modal-box { background: #1e293b; border: 1px solid #334155; }
+
+        /* ===== MODO CELULAR / TABLET ===== */
+        .mobile-mode #view-pdv {
+            display: flex !important;
+            flex-direction: column !important;
+            overflow-y: auto !important;
+        }
+        .mobile-mode #view-pdv > div {
+            width: 100% !important;
+            height: auto !important;
+            min-height: max-content !important;
+            border-right: none !important;
+        }
+        .mobile-mode #view-pdv > div:first-child {
+            min-height: 500px !important;
+        }
+        #cart-items-container {
+            min-height: 120px;
+        }
+        #view-pdv > div:nth-child(2) > div:last-child {
+            flex-shrink: 0 !important;
+            max-height: 55vh;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden text-slate-800">
@@ -214,6 +238,10 @@
             <button onclick="doLogout()" class="text-slate-400 hover:text-white transition" title="Sair"><i data-lucide="log-out" class="w-5 h-5"></i></button>
             <button onclick="lockSystem()" class="text-slate-400 hover:text-white transition" title="Bloquear sistema"><i data-lucide="lock" class="w-5 h-5"></i></button>
             <button onclick="toggleTheme()" class="theme-toggle text-slate-400 hover:text-white" title="Alternar tema"><i data-lucide="moon" id="theme-icon" class="w-5 h-5"></i></button>
+            
+            <!-- Botão Modo Celular inserido aqui -->
+            <button onclick="toggleMobileMode()" class="text-slate-400 hover:text-white transition" title="Modo Celular/Tablet"><i data-lucide="smartphone" class="w-5 h-5"></i></button>
+            
             <button onclick="openSettingsModal()" id="btn-settings" class="text-slate-400 hover:text-white transition" title="Configurações"><i data-lucide="settings" class="w-5 h-5"></i></button>
             <div class="text-right hidden sm:block">
                 <p id="clock-time" class="text-sm font-bold leading-none text-slate-200">00:00:00</p>
@@ -879,6 +907,16 @@
             lucide.createIcons();
             applyPermissions();
             switchTab('pdv');
+
+            // Verifica e ativa o Modo Celular salvo
+            if (localStorage.getItem('pdv_escola_mobile_mode') === 'true') {
+                document.body.classList.add('mobile-mode');
+                setTimeout(() => {
+                    const btn = document.querySelector('[title="Modo Celular/Tablet"] i');
+                    if (btn) btn.setAttribute('data-lucide', 'monitor');
+                    lucide.createIcons();
+                }, 100);
+            }
         }
 
         function applyPermissions() {
@@ -1377,6 +1415,23 @@
         function toggleValuesVisibility() {
             valuesVisible = !valuesVisible;
             document.querySelectorAll('.value-hidden').forEach(el => el.classList.toggle('hidden-value', !valuesVisible));
+        }
+
+        // ============================================================
+        //  MODO CELULAR / TABLET
+        // ============================================================
+        function toggleMobileMode() {
+            document.body.classList.toggle('mobile-mode');
+            const isMobile = document.body.classList.contains('mobile-mode');
+            
+            const btn = document.querySelector('[title="Modo Celular/Tablet"] i');
+            if (btn) {
+                btn.setAttribute('data-lucide', isMobile ? 'monitor' : 'smartphone');
+                lucide.createIcons();
+            }
+            
+            localStorage.setItem('pdv_escola_mobile_mode', isMobile);
+            showToast(isMobile ? '📱 Modo Celular Ativado' : '💻 Modo Desktop Ativado');
         }
 
         // Eventos DOM
