@@ -261,17 +261,22 @@
                 <i data-lucide="shopping-cart" class="w-4 h-4"></i>
                 <span>Caixa</span>
             </button>
-            <button onclick="switchTab('relatorios')" id="tab-btn-relatorios" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-sm transition text-slate-300 hover:text-white">
+            <button onclick="switchTab('relatorios')" id="tab-btn-relatorios" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-sm transition text-slate-300 hover:text-white" style="display: none;">
                 <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
                 <span>Vendas</span>
             </button>
-            <button onclick="switchTab('produtos')" id="tab-btn-produtos" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-sm transition text-slate-300 hover:text-white">
+            <button onclick="switchTab('produtos')" id="tab-btn-produtos" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-sm transition text-slate-300 hover:text-white" style="display: none;">
                 <i data-lucide="package" class="w-4 h-4"></i>
                 <span>Produtos</span>
             </button>
             <button onclick="switchTab('fiados')" id="tab-btn-fiados" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-sm transition text-slate-300 hover:text-white">
                 <i data-lucide="users" class="w-4 h-4"></i>
                 <span>Fiados</span>
+            </button>
+            <!-- NOVA ABA DE TURNOS PARA O MASTER -->
+            <button onclick="switchTab('turnos')" id="tab-btn-turnos" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-sm transition text-slate-300 hover:text-white" style="display: none;">
+                <i data-lucide="clock" class="w-4 h-4"></i>
+                <span>Turnos</span>
             </button>
         </nav>
 
@@ -592,6 +597,37 @@
             </div>
         </div>
 
+        <!-- ABA 5: TURNOS (MASTER) -->
+        <div id="view-turnos" class="hidden h-full overflow-y-auto p-6 space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-extrabold text-slate-800">Histórico de Caixas e Turnos</h2>
+                    <p class="text-slate-500 text-sm">Acompanhe as aberturas, fechamentos e as diferenças de valores informadas pelos operadores.</p>
+                </div>
+                <span id="turnos-count" class="text-xs font-bold bg-slate-100 text-slate-600 px-3 py-2 rounded-lg">0 turnos registrados</span>
+            </div>
+
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500">
+                            <tr>
+                                <th class="p-3.5">Operador</th>
+                                <th class="p-3.5">Abertura</th>
+                                <th class="p-3.5">Fechamento</th>
+                                <th class="p-3.5 text-right">Fundo Inic.</th>
+                                <th class="p-3.5 text-right">Esperado</th>
+                                <th class="p-3.5 text-right">Contado</th>
+                                <th class="p-3.5 text-right">Diferença</th>
+                                <th class="p-3.5 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="turnos-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <footer class="footer">
@@ -818,6 +854,7 @@
         let products = [];
         let salesHistory = [];
         let fiados = [];
+        let shiftHistory = []; // NOVO: Histórico de Turnos
         let cart = [];
         let selectedCategory = 'Todos';
         let selectedPaymentMethod = 'pix';
@@ -870,6 +907,20 @@
                     fiados.push({ firestoreId: doc.id, ...doc.data() });
                 });
                 renderFiados();
+            });
+
+            // NOVO: Escutador de Turnos (Somente para atualizar a aba do Master)
+            db.collection("fechamentos_caixa").onSnapshot(snapshot => {
+                shiftHistory = [];
+                snapshot.forEach(doc => {
+                    shiftHistory.push({ firestoreId: doc.id, ...doc.data() });
+                });
+                // Ordenar por data/hora mais recente
+                shiftHistory.sort((a, b) => new Date(b.startTime.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$2/$1/$3')) - new Date(a.startTime.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$2/$1/$3')));
+                
+                if (!document.getElementById('view-turnos').classList.contains('hidden')) {
+                    renderShifts();
+                }
             });
 
             db.collection("configuracoes").doc("geral").onSnapshot(doc => {
@@ -1118,7 +1169,7 @@
 
         function applyPermissions() {
             const isMaster = currentUserRole === 'master';
-            ['tab-btn-relatorios', 'tab-btn-produtos', 'btn-export-excel', 'btn-clear-history', 'btn-export-backup', 'btn-import-backup', 'btn-settings'].forEach(id => {
+            ['tab-btn-relatorios', 'tab-btn-produtos', 'tab-btn-turnos', 'btn-export-excel', 'btn-clear-history', 'btn-export-backup', 'btn-import-backup', 'btn-settings'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = isMaster ? '' : 'none';
             });
@@ -1167,9 +1218,10 @@
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
-            ['view-pdv', 'view-relatorios', 'view-produtos', 'view-fiados'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['view-pdv', 'view-relatorios', 'view-produtos', 'view-fiados', 'view-turnos'].forEach(id => document.getElementById(id).classList.add('hidden'));
             document.getElementById(`tab-btn-${tab}`).classList.add('active-tab');
             document.getElementById(`view-${tab}`).classList.remove('hidden');
+            if (tab === 'turnos') renderShifts();
             lucide.createIcons();
         }
 
@@ -1337,7 +1389,7 @@
         }
 
         // ============================================================
-        //  FINALIZAR VENDA
+        //  FINALIZAR VENDA (PERSISTÊNCIA NO FIREBASE)
         // ============================================================
         async function finalizeSale() {
             if (!cart.length) return showToast('⚠️ Carrinho vazio!');
@@ -1390,10 +1442,12 @@
                 operator: getDisplayName()
             };
 
+            // Salva Venda no Firebase
             const saleDoc = await db.collection("vendas").add(saleRecord);
             saleRecord.firestoreId = saleDoc.id;
             lastSale = saleRecord;
 
+            // Se for Fiado, salva na coleção de fiados
             if (selectedPaymentMethod === 'fiado') {
                 await db.collection("fiados").add({
                     id: saleRecord.id,
@@ -1703,6 +1757,49 @@
         }
 
         // ============================================================
+        //  ABA MASTER: HISTÓRICO DE TURNOS
+        // ============================================================
+        function renderShifts() {
+            if (currentUserRole !== 'master') return;
+            document.getElementById('turnos-count').textContent = `${shiftHistory.length} turno(s) registrado(s)`;
+            const tbody = document.getElementById('turnos-table-body');
+            
+            if (shiftHistory.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400 text-xs">Nenhum turno registrado.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = shiftHistory.map(s => {
+                const diffClass = s.diffCash === 0 ? 'text-emerald-600' : (s.diffCash > 0 ? 'text-blue-600' : 'text-rose-600');
+                const diffSign = s.diffCash > 0 ? '+' : '';
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3.5 font-bold text-slate-800 text-xs">${s.operator}</td>
+                        <td class="p-3.5 text-xs text-slate-600">${s.startTime}</td>
+                        <td class="p-3.5 text-xs text-slate-600">${s.endTime}</td>
+                        <td class="p-3.5 text-right font-medium text-xs">R$ ${(s.initialCash || 0).toFixed(2).replace('.', ',')}</td>
+                        <td class="p-3.5 text-right font-bold text-xs text-slate-800">R$ ${(s.expectedCash || 0).toFixed(2).replace('.', ',')}</td>
+                        <td class="p-3.5 text-right font-bold text-xs text-slate-800">R$ ${(s.countedCash || 0).toFixed(2).replace('.', ',')}</td>
+                        <td class="p-3.5 text-right font-black text-xs ${diffClass}">${diffSign} R$ ${s.diffCash.toFixed(2).replace('.', ',')}</td>
+                        <td class="p-3.5 text-center">
+                            <button onclick="deleteShift('${s.firestoreId}')" class="text-rose-500 text-xs font-semibold">Excluir</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function deleteShift(docId) {
+            if (currentUserRole !== 'master') return;
+            window._pendingAction = 'deleteShift';
+            window._pendingShiftId = docId;
+            document.getElementById('password-modal-message').textContent = 'Digite a senha mestre para apagar este turno do histórico';
+            document.getElementById('modal-password').classList.remove('hidden');
+            document.getElementById('master-password-input').value = '';
+            document.getElementById('master-password-input').focus();
+        }
+
+        // ============================================================
         //  BACKUP E EXPORTAÇÃO
         // ============================================================
         function exportToExcel() {
@@ -1731,7 +1828,7 @@
             if (currentUserRole !== 'master') return;
             const passwords = loadPasswordsFromLocalStorage();
             const data = { 
-                products, salesHistory, fiados, schoolName, eventName, 
+                products, salesHistory, fiados, shiftHistory, schoolName, eventName, 
                 theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light',
                 lockPassword: passwords.lockPassword, masterPassword: passwords.masterPassword
             };
@@ -1886,6 +1983,10 @@
                 lastSale = null;
                 showToast('↩️ Venda cancelada e carrinho restaurado!');
                 if (document.getElementById('view-pdv').classList.contains('hidden')) switchTab('pdv');
+            } else if (action === 'deleteShift') {
+                db.collection("fechamentos_caixa").doc(window._pendingShiftId).delete().then(() => {
+                    showToast('🗑️ Turno apagado do histórico!');
+                });
             }
 
             closePasswordModal();
