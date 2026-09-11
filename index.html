@@ -271,6 +271,56 @@
         }
     </style>
 
+
+    <style id="pdv-layout-fix">
+        /* ===== CORREÇÃO DE LAYOUT DO PDV =====
+           A grade de produtos e o carrinho rolam em áreas independentes.
+           O pagamento permanece visível mesmo com muitos produtos/itens. */
+        #main-content { min-height: 0 !important; }
+        #view-pdv { height: 100% !important; min-height: 0 !important; overflow: hidden !important; }
+        #view-pdv > div { min-height: 0 !important; overflow: hidden !important; }
+        #view-pdv > div:first-child { min-height: 0 !important; }
+        #view-pdv > div:first-child > div:nth-child(2) {
+            min-height: 0 !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            flex: 1 1 auto !important;
+            scrollbar-gutter: stable;
+        }
+        #pdv-products-grid { min-height: min-content; padding-bottom: 24px; }
+        #view-pdv > div:nth-child(2) { min-height: 0 !important; overflow: hidden !important; }
+        #cart-items-container {
+            min-height: 0 !important;
+            flex: 1 1 auto !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            scrollbar-gutter: stable;
+        }
+        #view-pdv > div:nth-child(2) > div:last-child {
+            flex: 0 0 auto !important;
+            min-height: fit-content !important;
+            max-height: 52vh !important;
+            overflow-y: auto !important;
+        }
+        @media (max-width: 1023px) {
+            #view-pdv { overflow-y: auto !important; }
+            #view-pdv > div { overflow: visible !important; }
+            #view-pdv > div:first-child { min-height: 58vh !important; }
+            #view-pdv > div:first-child > div:nth-child(2) { max-height: 58vh; }
+            #view-pdv > div:nth-child(2) { min-height: 560px !important; overflow: hidden !important; }
+        }
+        @media (max-width: 640px) {
+            #view-pdv > div:first-child { min-height: 62vh !important; }
+            #view-pdv > div:first-child > div:nth-child(2) { max-height: 62vh; }
+            #view-pdv > div:nth-child(2) { min-height: 600px !important; }
+        }
+        .mobile-mode #view-pdv { height: auto !important; min-height: 0 !important; overflow-y: auto !important; }
+        .mobile-mode #view-pdv > div { min-height: 0 !important; overflow: visible !important; }
+        .mobile-mode #view-pdv > div:first-child { min-height: 520px !important; }
+        .mobile-mode #view-pdv > div:first-child > div:nth-child(2) { max-height: 520px; overflow-y: auto !important; }
+        .mobile-mode #view-pdv > div:nth-child(2) { min-height: 620px !important; overflow: hidden !important; }
+    </style>
+
 </head>
 <body class="tech-app h-screen flex flex-col overflow-hidden text-slate-800">
 
