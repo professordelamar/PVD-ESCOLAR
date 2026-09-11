@@ -549,8 +549,12 @@
                 <span>Caixa</span>
             </button>
             <button onclick="switchTab('relatorios')" id="tab-btn-relatorios" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-sm transition text-slate-300 hover:text-white" style="display: none;">
-                <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                <i data-lucide="receipt" class="w-4 h-4"></i>
                 <span>Vendas</span>
+            </button>
+            <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-sm transition text-slate-300 hover:text-white" style="display: none;">
+                <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                <span>Relatórios</span>
             </button>
             <button onclick="switchTab('produtos')" id="tab-btn-produtos" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-sm transition text-slate-300 hover:text-white" style="display: none;">
                 <i data-lucide="package" class="w-4 h-4"></i>
@@ -843,7 +847,26 @@
             </div>
         </div>
 
-        <!-- ABA 3: CADASTRO DE PRODUTOS -->
+        <!-- ABA 3: RELATÓRIOS GERENCIAIS -->
+        <div id="view-dashboard" class="hidden h-full overflow-y-auto p-6 space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div><h2 class="text-2xl font-extrabold text-slate-800">Relatórios gerenciais</h2><p class="text-slate-500 text-sm">Resumo consolidado das vendas ativas no período selecionado.</p></div>
+                <div class="flex items-center gap-2"><input type="date" id="report-date-start" onchange="applyReportDateFilter()" class="px-2 py-1.5 border rounded-lg text-xs"><input type="date" id="report-date-end" onchange="applyReportDateFilter()" class="px-2 py-1.5 border rounded-lg text-xs"><button onclick="clearReportDateFilter()" class="text-rose-500 font-bold text-xs">Limpar</button></div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200"><p class="text-xs font-bold text-slate-400 uppercase">Total vendido</p><strong id="report-kpi-total" class="text-2xl font-black text-blue-600">R$ 0,00</strong><p id="report-kpi-count" class="text-xs text-slate-500 mt-1">0 vendas</p></div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200"><p class="text-xs font-bold text-slate-400 uppercase">Ticket médio</p><strong id="report-kpi-ticket" class="text-2xl font-black text-indigo-600">R$ 0,00</strong></div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200"><p class="text-xs font-bold text-slate-400 uppercase">Itens vendidos</p><strong id="report-kpi-items" class="text-2xl font-black text-emerald-600">0</strong></div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200"><p class="text-xs font-bold text-slate-400 uppercase">Categorias</p><strong id="report-kpi-categories" class="text-2xl font-black text-purple-600">0</strong></div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200"><h3 class="font-bold text-slate-800 mb-3">Vendas por dia</h3><canvas id="report-daily-chart" height="85"></canvas></div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-5 rounded-xl border border-slate-200"><h3 class="font-bold text-slate-800 mb-3">Por forma de pagamento</h3><div id="report-payment-list" class="space-y-3 text-sm"></div></div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200"><h3 class="font-bold text-slate-800 mb-3">Produtos mais vendidos</h3><div id="report-product-list" class="space-y-2 text-sm"></div></div>
+            </div>
+        </div>
+
+        <!-- ABA 4: CADASTRO DE PRODUTOS -->
         <div id="view-produtos" class="hidden h-full overflow-y-auto p-6 space-y-6">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -1769,7 +1792,7 @@
 
         function applyPermissions() {
             const isMaster = currentUserRole === 'master';
-            ['tab-btn-relatorios', 'tab-btn-produtos', 'tab-btn-turnos', 'tab-btn-estornos', 'btn-export-excel', 'btn-clear-history', 'btn-export-backup', 'btn-import-backup', 'btn-settings'].forEach(id => {
+            ['tab-btn-relatorios', 'tab-btn-dashboard', 'tab-btn-produtos', 'tab-btn-turnos', 'tab-btn-estornos', 'btn-export-excel', 'btn-clear-history', 'btn-export-backup', 'btn-import-backup', 'btn-settings'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
                     el.style.display = isMaster ? 'flex' : 'none';
@@ -1823,11 +1846,12 @@
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
-            ['view-pdv', 'view-relatorios', 'view-produtos', 'view-fiados', 'view-estornos', 'view-turnos'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['view-pdv', 'view-relatorios', 'view-dashboard', 'view-produtos', 'view-fiados', 'view-estornos', 'view-turnos'].forEach(id => document.getElementById(id).classList.add('hidden'));
             document.getElementById(`tab-btn-${tab}`).classList.add('active-tab');
             document.getElementById(`view-${tab}`).classList.remove('hidden');
             if (tab === 'turnos') renderShifts();
             if (tab === 'estornos') renderItemReversals();
+            if (tab === 'dashboard') renderReportDashboard();
             if (tab === 'relatorios') { renderReports(); renderChart(getDailyData(filteredSales)); }
             if (tab === 'produtos') renderAdminProducts();
             if (tab === 'fiados') renderFiados();
@@ -2378,6 +2402,37 @@
         // ============================================================
         //  RELATÓRIOS & GRÁFICOS
         // ============================================================
+        function renderReportDashboard() {
+            if (currentUserRole !== 'master') return;
+            const active = (Array.isArray(filteredSales) ? filteredSales : []).filter(isActiveSale);
+            const total = active.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+            const items = {}, methods = { pix: 0, cartao: 0, dinheiro: 0, fiado: 0 };
+            active.forEach(sale => {
+                methods[sale.paymentMethod] = (methods[sale.paymentMethod] || 0) + Number(sale.total || 0);
+                (sale.items || []).forEach(item => { const key = String(item.name || 'Item'); if (!items[key]) items[key] = { name: key, quantity: 0, total: 0 }; items[key].quantity += Number(item.quantity || 0); items[key].total += Number(item.price || 0) * Number(item.quantity || 0); });
+            });
+            const itemRows = Object.values(items).sort((a,b) => b.total - a.total);
+            const categories = new Set(active.flatMap(s => (s.items || []).map(i => { const p = products.find(x => x.firestoreId === i.firestoreId); return p?.category || 'Outros'; })));
+            document.getElementById('report-kpi-total').textContent = formatMoney(total);
+            document.getElementById('report-kpi-count').textContent = `${active.length} venda(s) activa(s)`;
+            document.getElementById('report-kpi-ticket').textContent = formatMoney(active.length ? total / active.length : 0);
+            document.getElementById('report-kpi-items').textContent = String(itemRows.reduce((sum, item) => sum + item.quantity, 0));
+            document.getElementById('report-kpi-categories').textContent = String(categories.size);
+            const labels = { pix: 'PIX', cartao: 'Cartão', dinheiro: 'Dinheiro', fiado: 'Fiado' };
+            document.getElementById('report-payment-list').innerHTML = Object.entries(methods).map(([key,value]) => `<div class="flex justify-between border-b pb-2"><span>${labels[key]}</span><strong>${formatMoney(value)}</strong></div>`).join('');
+            document.getElementById('report-product-list').innerHTML = itemRows.length ? itemRows.slice(0, 10).map(item => `<div class="flex justify-between gap-3"><span class="truncate">${escapeHtml(item.name)}</span><strong class="whitespace-nowrap">${item.quantity} un. · ${formatMoney(item.total)}</strong></div>`).join('') : '<span class="text-slate-400">Sem vendas no período.</span>';
+            const canvas = document.getElementById('report-daily-chart');
+            if (canvas && typeof Chart !== 'undefined') { if (window.reportChartInstance) window.reportChartInstance.destroy(); const data = getDailyData(filteredSales); window.reportChartInstance = new Chart(canvas.getContext('2d'), { type:'bar', data:{labels:data.labels.map(d=>{const [y,m,day]=d.split('-');return `${day}/${m}`;}),datasets:[{label:'Vendas',data:data.values,backgroundColor:'#2563eb',borderRadius:6}]}, options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}} }); }
+        }
+
+        function applyReportDateFilter() {
+            const start = document.getElementById('report-date-start').value, end = document.getElementById('report-date-end').value;
+            const startMs = start ? new Date(`${start}T00:00:00`).getTime() : -Infinity, endMs = end ? new Date(`${end}T23:59:59.999`).getTime() : Infinity;
+            filteredSales = salesHistory.filter(sale => { const ts = parseSaleTimestamp(sale); return ts >= startMs && ts <= endMs; });
+            renderReportDashboard(); renderReports();
+        }
+        function clearReportDateFilter() { document.getElementById('report-date-start').value = ''; document.getElementById('report-date-end').value = ''; filteredSales = [...salesHistory]; renderReportDashboard(); renderReports(); }
+
         function renderReports() {
             if (currentUserRole !== 'master') return;
             const sales = Array.isArray(filteredSales) ? filteredSales : [];
@@ -2519,6 +2574,7 @@
                 return timestamp >= start && timestamp <= end;
             });
             renderReports();
+            renderReportDashboard();
             renderChart(getDailyData(filteredSales));
         }
 
@@ -2527,6 +2583,7 @@
             document.getElementById('filter-date-end').value = '';
             filteredSales = [...salesHistory];
             renderReports();
+            renderReportDashboard();
             renderChart(getDailyData(filteredSales));
         }
 
