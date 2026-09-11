@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDV Cantina Escolar - Caixa Profissional</title>
+    <title>PDV Cantina Escolar - Caixa Profissional | Etapa 1</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -454,6 +454,7 @@
             <button onclick="lockSystem()" class="text-slate-400 hover:text-white transition" title="Bloquear sistema"><i data-lucide="lock" class="w-5 h-5"></i></button>
             <button onclick="toggleTheme()" class="theme-toggle text-slate-400 hover:text-white" title="Alternar tema"><i data-lucide="moon" id="theme-icon" class="w-5 h-5"></i></button>
             <button onclick="toggleMobileMode()" class="text-slate-400 hover:text-white transition" title="Modo Celular/Tablet"><i data-lucide="smartphone" class="w-5 h-5"></i></button>
+            <button onclick="toggleFullscreen()" id="btn-fullscreen" class="text-slate-400 hover:text-white transition" title="Tela cheia (F10)"><i data-lucide="maximize" class="w-5 h-5"></i></button>
             <button onclick="openSettingsModal()" id="btn-settings" class="text-slate-400 hover:text-white transition" title="Configurações"><i data-lucide="settings" class="w-5 h-5"></i></button>
             <div class="text-right hidden sm:block">
                 <p id="clock-time" class="text-sm font-bold leading-none text-slate-200">00:00:00</p>
@@ -663,14 +664,22 @@
                 </div>
             </div>
 
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded-xl border border-slate-200"><p class="text-xs font-bold text-slate-400 uppercase">Ticket médio</p><strong id="kpi-average-ticket" class="text-xl font-black text-blue-600">R$ 0,00</strong></div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200"><p class="text-xs font-bold text-slate-400 uppercase">Descontos concedidos</p><strong id="kpi-total-discounts" class="text-xl font-black text-amber-600">R$ 0,00</strong></div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200"><p class="text-xs font-bold text-slate-400 uppercase">Categorias vendidas</p><strong id="kpi-category-count" class="text-xl font-black text-purple-600">0</strong></div>
+            </div>
+
             <!-- Tabelas -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <div class="lg:col-span-4 bg-white p-5 rounded-xl border border-slate-200 flex flex-col">
                     <div class="flex items-center justify-between mb-4 pb-2 border-b">
-                        <h3 class="font-bold text-slate-800 text-base">Mais Vendidos</h3>
+                        <h3 class="font-bold text-slate-800 text-base">Total vendido por item</h3>
+                        <div id="category-ranking-list" class="mt-4 pt-3 border-t space-y-2 text-xs"></div>
                         <span id="kpi-total-items-sold" class="text-xs font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">0 un.</span>
                     </div>
-                    <div id="product-ranking-list" class="flex-1 overflow-y-auto space-y-3 max-h-[420px]"></div>
+                    <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2 text-[10px] uppercase font-bold text-slate-400 border-b pb-2 mb-2"><span>Item</span><span>Qtd.</span><span>Valor</span></div>
+                    <div id="product-ranking-list" class="flex-1 overflow-y-auto space-y-2 max-h-[420px]"></div>
                 </div>
                 <div class="lg:col-span-8 bg-white p-5 rounded-xl border border-slate-200">
                     <div class="flex items-center justify-between mb-4 pb-2 border-b">
@@ -794,7 +803,7 @@
     </main>
 
     <footer class="footer">
-        <span>Desenvolvido por <strong>Delamar Jr</strong> © 2026 - Conectado ao Firebase Cloud</span>
+        <span>Desenvolvido por <strong>Delamar Jr</strong> © 2026 - Etapa 2 | Conectado ao Firebase Cloud</span>
     </footer>
 
     <!-- MODAIS -->
@@ -823,8 +832,9 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase mb-1">Preço (R$) *</label>
-                        <input type="number" step="0.01" min="0.01" id="form-product-price" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                        <label class="block text-xs font-bold uppercase mb-1">Preço padrão (R$)</label>
+                        <input type="number" step="0.01" min="0.01" id="form-product-price" placeholder="Opcional: informar no caixa" class="w-full px-3 py-2 border rounded-lg text-sm">
+                        <label class="mt-1 flex items-center gap-1.5 text-[10px] text-slate-500"><input type="checkbox" id="form-product-price-at-sale"> Definir preço somente na hora da venda</label>
                     </div>
                 </div>
                 <div>
@@ -997,8 +1007,20 @@
             appId: "1:199161887344:web:eebef0bcefd85d59cb92b5"
         };
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        // O login local não deve deixar de responder só porque um CDN externo falhou.
+        let db = null;
+        let firebaseReady = false;
+        try {
+            if (!window.firebase || typeof firebase.initializeApp !== 'function') {
+                throw new Error('SDK do Firebase não foi carregado.');
+            }
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            firebaseReady = true;
+        } catch (error) {
+            console.error('Falha ao inicializar o Firebase:', error);
+            window.firebaseInitError = error;
+        }
 
         // Dados Padrão (Caso banco esteja limpo)
         const DEFAULT_PRODUCTS = [
@@ -1348,7 +1370,8 @@
             document.getElementById('modal-close-shift').classList.remove('active');
         }
 
-        function confirmCloseShift() {
+        async function confirmCloseShift() {
+            if (!currentShift) return alert('Não existe um turno aberto para fechar.');
             const countedVal = parseFloat(document.getElementById('close-shift-cash-counted').value);
             if (isNaN(countedVal) || countedVal < 0) return alert('Por favor, digite o valor contado na gaveta.');
 
@@ -1375,8 +1398,14 @@
                 diffCash
             };
 
-            // Salva Fechamento no Firebase
-            db.collection("fechamentos_caixa").add(shiftSummary);
+            // Salva o fechamento e só continua após confirmação do Firebase.
+            try {
+                await db.collection("fechamentos_caixa").add(shiftSummary);
+            } catch (error) {
+                console.error('Falha ao salvar fechamento:', error);
+                showToast('Não foi possível salvar o fechamento. O turno continua aberto.');
+                return;
+            }
 
             // Exibe resumo
             document.getElementById('summary-operator-date').textContent = `${currentShift.operator} | ${currentShift.startTime} até ${shiftSummary.endTime}`;
@@ -1420,6 +1449,11 @@
         // ============================================================
         async function initApp() {
             await ensurePasswordsExist();
+            if (!firebaseReady || !db) {
+                setSyncStatus('Firebase indisponível', 'error');
+                showToast('Não foi possível conectar ao Firebase. Recarregue a página e tente novamente.');
+                return;
+            }
             setupFirebaseListeners();
             loadThemeFromLocalStorage();
             updateClock();
@@ -1478,16 +1512,18 @@
             setTimeout(() => el.classList.remove('show'), 2500);
         }
 
-        function playDing() {
+        function playTone(frequencies, duration = 140, volume = 0.18) {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain); gain.connect(ctx.destination);
-                osc.frequency.value = 800; gain.gain.value = 0.3;
-                osc.start(); setTimeout(() => osc.stop(), 150);
+                const gain = ctx.createGain(); gain.connect(ctx.destination); gain.gain.value = volume;
+                frequencies.forEach((frequency, index) => {
+                    const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = frequency; osc.connect(gain);
+                    osc.start(ctx.currentTime + index * 0.08); osc.stop(ctx.currentTime + index * 0.08 + duration / 1000);
+                });
             } catch (e) {}
         }
+        function playDing() { playTone([740, 988], 130, 0.16); }
+        function playError() { playTone([180, 120], 220, 0.20); }
 
         function updateClock() {
             const now = new Date();
@@ -1540,6 +1576,7 @@
             container.innerHTML = filtered.map(p => {
                 const productId = Number(p.id);
                 const stockLabel = p.stock !== null && p.stock !== undefined ? `${Number(p.stock)} un` : '∞';
+                const priceLabel = p.price === null || p.price === undefined || Number(p.price) <= 0 ? 'Preço no caixa' : formatMoney(p.price);
                 return `
                 <button type="button" onclick="addToCart(${productId})" aria-label="Adicionar ${escapeHtml(p.name)} ao carrinho" class="product-card bg-white border border-slate-200 rounded-xl overflow-hidden cursor-pointer p-3 flex flex-col justify-between text-left">
                     <div class="aspect-video w-full rounded-lg overflow-hidden bg-slate-100 mb-2 relative">
@@ -1550,7 +1587,7 @@
                     <div>
                         <h4 class="font-bold text-slate-800 text-sm leading-snug line-clamp-2">${escapeHtml(p.name)}</h4>
                         <div class="flex items-center justify-between mt-2 pt-2 border-t">
-                            <span class="text-base font-extrabold text-blue-600">${formatMoney(p.price)}</span>
+                            <span class="text-base font-extrabold text-blue-600">${priceLabel}</span>
                             <span class="bg-blue-50 text-blue-600 p-1.5 rounded-lg"><i data-lucide="plus" class="w-4 h-4"></i></span>
                         </div>
                     </div>
@@ -1563,16 +1600,27 @@
             const product = products.find(p => p.id === id);
             if (!product) return;
             if (product.stock !== null && product.stock !== undefined && product.stock <= 0) {
+                playError();
                 return showToast('⚠️ Produto sem estoque!');
+            }
+            let salePrice = Number(product.price);
+            if (!Number.isFinite(salePrice) || salePrice <= 0) {
+                const entered = window.prompt(`Informe o preço de venda para "${product.name}" (R$):`, '');
+                salePrice = Number.parseFloat(String(entered || '').replace(',', '.'));
+                if (!Number.isFinite(salePrice) || salePrice <= 0) {
+                    playError();
+                    return showToast('Informe um preço válido para continuar.');
+                }
             }
             const existing = cart.find(item => item.id === id);
             if (existing) {
                 if (product.stock !== null && product.stock !== undefined && existing.quantity + 1 > product.stock) {
+                    playError();
                     return showToast('⚠️ Limite de estoque atingido!');
                 }
                 existing.quantity += 1;
             } else {
-                cart.push({ id: product.id, name: product.name, price: product.price, quantity: 1, firestoreId: product.firestoreId });
+                cart.push({ id: product.id, name: product.name, price: salePrice, quantity: 1, firestoreId: product.firestoreId, priceAtSale: product.price === null || product.price === undefined || Number(product.price) <= 0 });
             }
             renderCart();
         }
@@ -1604,8 +1652,8 @@
 
         function updateCartQuantity(id, delta) {
             const item = cart.find(i => i.id === id);
-            if (!item) return;
-            item.quantity += delta;
+            if (!item || !Number.isFinite(Number(delta))) return;
+            item.quantity = Math.max(0, Math.floor(Number(item.quantity) + Number(delta)));
             if (item.quantity <= 0) cart = cart.filter(i => i.id !== id);
             renderCart();
         }
@@ -1685,10 +1733,26 @@
             const total = Number(getCartTotal().toFixed(2));
             let received = total, change = 0, discount = 0;
             if (selectedPaymentMethod === 'dinheiro') {
+                const subtotal = Number(cart.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0).toFixed(2));
+                discount = Number.parseFloat(document.getElementById('cash-discount').value) || 0;
+                if (!Number.isFinite(discount) || discount < 0) return alert('O desconto deve ser um valor válido e não negativo.');
+                if (discount > subtotal) return alert('O desconto não pode ser maior que o subtotal.');
                 received = Number.parseFloat(document.getElementById('cash-received').value) || 0;
                 if (received < total) return alert('O valor recebido é menor do que o total.');
                 change = Number((received - total).toFixed(2));
-                discount = Number.parseFloat(document.getElementById('cash-discount').value) || 0;
+            }
+
+            // Revalida os itens contra o catálogo carregado antes de gravar.
+            // A proteção definitiva contra adulteração exige backend/Cloud Functions,
+            // mas esta checagem evita vendas com itens removidos ou dados obsoletos.
+            for (const cartItem of cart) {
+                const currentProduct = cartItem.firestoreId ? products.find(p => p.firestoreId === cartItem.firestoreId) : null;
+                if (cartItem.firestoreId && !currentProduct) {
+                    return showToast(`O produto \"${cartItem.name}\" não está mais disponível.`);
+                }
+                if (currentProduct && !cartItem.priceAtSale && Number(currentProduct.price) !== Number(cartItem.price)) {
+                    return showToast(`O preço de \"${cartItem.name}\" foi alterado. Remova e adicione o item novamente.`);
+                }
             }
 
             let fiadoData = null;
@@ -1772,6 +1836,7 @@
                 document.getElementById('fiado-obs').value = '';
             } catch (error) {
                 console.error('Falha ao finalizar venda:', error);
+                playError();
                 setSyncStatus('Falha ao gravar', 'error');
                 showToast(error.message || 'A venda não foi gravada. Nenhuma alteração parcial foi aplicada.');
             } finally {
@@ -1828,7 +1893,7 @@
                     <td class="p-3.5"><img src="${escapeHtml(safeImageUrl(p.image))}" alt="${escapeHtml(p.name)}" loading="lazy" class="w-10 h-10 object-cover rounded-lg border"></td>
                     <td class="p-3.5 font-bold text-slate-800 text-sm">${escapeHtml(p.name)}</td>
                     <td class="p-3.5 text-xs text-slate-600"><span class="bg-slate-100 border px-2.5 py-1 rounded-md font-medium">${escapeHtml(p.category)}</span></td>
-                    <td class="p-3.5 text-right font-extrabold text-sm text-slate-800">${formatMoney(p.price)}</td>
+                    <td class="p-3.5 text-right font-extrabold text-sm text-slate-800">${p.price === null || p.price === undefined || Number(p.price) <= 0 ? 'No caixa' : formatMoney(p.price)}</td>
                     <td class="p-3.5 text-center font-bold text-sm">${p.stock !== null && p.stock !== undefined ? Number(p.stock) : '∞'}</td>
                     <td class="p-3.5 text-center"><span class="status-pill ok">Activo</span></td>
                     <td class="p-3.5 text-center space-x-2">
@@ -1847,7 +1912,8 @@
                 if (p) {
                     document.getElementById('form-product-name').value = p.name;
                     document.getElementById('form-product-category').value = p.category;
-                    document.getElementById('form-product-price').value = p.price;
+                    document.getElementById('form-product-price').value = p.price === null || p.price === undefined ? '' : p.price;
+                    document.getElementById('form-product-price-at-sale').checked = p.price === null || p.price === undefined || Number(p.price) <= 0;
                     document.getElementById('form-product-stock').value = p.stock !== null && p.stock !== undefined ? p.stock : '';
                     document.getElementById('form-product-image').value = p.image || '';
                 }
@@ -1862,11 +1928,13 @@
             const docId = document.getElementById('form-product-id').value;
             const name = document.getElementById('form-product-name').value.trim();
             const category = document.getElementById('form-product-category').value;
-            const price = parseFloat(document.getElementById('form-product-price').value);
+            const priceField = document.getElementById('form-product-price').value.trim();
+            const priceAtSale = document.getElementById('form-product-price-at-sale').checked;
+            const price = priceAtSale || priceField === '' ? null : parseFloat(priceField);
             const stock = document.getElementById('form-product-stock').value.trim();
             const stockNum = stock === '' ? null : Number.parseInt(stock, 10);
             const image = document.getElementById('form-product-image').value.trim();
-            if (!name || !Number.isFinite(price) || price <= 0 || (stockNum !== null && (!Number.isInteger(stockNum) || stockNum < 0))) return alert('Verifique nome, preço e stock.');
+            if (!name || (!priceAtSale && (!Number.isFinite(price) || price <= 0)) || (stockNum !== null && (!Number.isInteger(stockNum) || stockNum < 0))) return alert('Verifique nome, preço e estoque.');
             if (image && !/^https?:\/\//i.test(image)) return alert('A imagem deve usar uma URL http(s).');
 
             const payload = {
@@ -1892,11 +1960,20 @@
         }
 
         async function restoreDefaultProducts() {
-            if (confirm('Restaurar produtos padrão na nuvem?')) {
+            if (!confirm('Adicionar produtos padrão que ainda não existem?')) return;
+            try {
+                let added = 0;
                 for (const p of DEFAULT_PRODUCTS) {
-                    await db.collection("produtos").add(p);
+                    const existing = await db.collection('produtos').where('id', '==', p.id).limit(1).get();
+                    if (existing.empty) {
+                        await db.collection('produtos').add(p);
+                        added += 1;
+                    }
                 }
-                showToast('✅ Produtos carregados!');
+                showToast(`✅ ${added} produto(s) padrão adicionado(s), sem duplicatas.`);
+            } catch (error) {
+                console.error('Falha ao carregar produtos padrão:', error);
+                showToast('Não foi possível carregar os produtos padrão.');
             }
         }
 
@@ -2009,11 +2086,24 @@
                 ranking[key].quantity += Number(item.quantity || 0);
                 ranking[key].total += Number(item.price || 0) * Number(item.quantity || 0);
             }));
-            const rankingList = Object.values(ranking).sort((a, b) => b.quantity - a.quantity).slice(0, 12);
+            const rankingList = Object.values(ranking).sort((a, b) => b.total - a.total);
+            const discountsTotal = activeSales.reduce((sum, sale) => sum + Number(sale.discount || 0), 0);
+            const categories = {};
+            activeSales.forEach(sale => (sale.items || []).forEach(item => {
+                const product = products.find(p => p.firestoreId === item.firestoreId || Number(p.id) === Number(item.id));
+                const category = product?.category || 'Outros';
+                categories[category] = (categories[category] || 0) + Number(item.quantity || 0);
+            }));
+            const categoryList = Object.entries(categories).sort((a, b) => b[1] - a[1]);
             document.getElementById('kpi-total-items-sold').textContent = `${rankingList.reduce((sum, item) => sum + item.quantity, 0)} un.`;
-            document.getElementById('product-ranking-list').innerHTML = rankingList.length ? rankingList.map((item, index) => `
-                <div class="flex items-center justify-between gap-3 text-xs"><div class="flex items-center gap-2 min-w-0"><span class="w-6 h-6 rounded-lg bg-blue-50 text-blue-700 font-black flex items-center justify-center">${index + 1}</span><span class="font-bold truncate">${escapeHtml(item.name)}</span></div><span class="font-black text-slate-500">${item.quantity} un.</span></div>
+            document.getElementById('kpi-average-ticket').textContent = formatMoney(activeSales.length ? totalSum / activeSales.length : 0);
+            document.getElementById('kpi-total-discounts').textContent = formatMoney(discountsTotal);
+            document.getElementById('kpi-category-count').textContent = String(categoryList.length);
+            document.getElementById('product-ranking-list').innerHTML = rankingList.length ? rankingList.map(item => `
+                <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 text-xs"><span class="font-bold truncate" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span><span class="font-black text-slate-500 text-right">${item.quantity} un.</span><span class="font-black text-emerald-600 text-right">${formatMoney(item.total)}</span></div>
             `).join('') : `<div class="text-center text-slate-400 py-8 text-xs">Sem vendas no período seleccionado.</div>`;
+
+            document.getElementById('category-ranking-list').innerHTML = categoryList.length ? categoryList.slice(0, 8).map(([name, quantity]) => `<div class="flex justify-between"><span>${escapeHtml(name)}</span><strong>${quantity} un.</strong></div>`).join('') : '<span class="text-slate-400">Sem dados.</span>';
 
             const tableBody = document.getElementById('sales-table-body');
             document.getElementById('sales-table-count').textContent = `Total: ${sales.length} registros (${activeSales.length} activos)`;
@@ -2356,10 +2446,28 @@
             const action = window._pendingAction;
 
             if (action === 'clearHistory') {
-                if (confirm('ATENÇÃO: Apagar todo o histórico de vendas e fiados NA NUVEM?')) {
-                    db.collection("vendas").get().then(snap => snap.forEach(doc => doc.ref.delete()));
-                    db.collection("fiados").get().then(snap => snap.forEach(doc => doc.ref.delete()));
-                    showToast('🗑️ Histórico zerado');
+                if (confirm('ATENÇÃO: esta ação apagará vendas e fiados da nuvem e não poderá ser desfeita. Continuar?')) {
+                    try {
+                        for (const collectionName of ['vendas', 'fiados']) {
+                            const snapshot = await db.collection(collectionName).get();
+                            let batch = db.batch();
+                            let operations = 0;
+                            for (const doc of snapshot.docs) {
+                                batch.delete(doc.ref);
+                                operations += 1;
+                                if (operations === 400) {
+                                    await batch.commit();
+                                    batch = db.batch();
+                                    operations = 0;
+                                }
+                            }
+                            if (operations) await batch.commit();
+                        }
+                        showToast('🗑️ Histórico apagado com sucesso.');
+                    } catch (error) {
+                        console.error('Falha ao apagar histórico:', error);
+                        showToast('Não foi possível apagar todo o histórico.');
+                    }
                 }
             } else if (action === 'markPaid') {
                 db.collection("fiados").doc(window._pendingFiadoId).update({ paid: true }).then(() => {
@@ -2433,6 +2541,16 @@
             }
         }
 
+        async function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+                else await document.exitFullscreen();
+            } catch (error) {
+                console.error('Tela cheia indisponível:', error);
+                showToast('O navegador bloqueou a tela cheia.');
+            }
+        }
+
         function toggleMobileMode() {
             document.body.classList.toggle('mobile-mode');
             const isMobile = document.body.classList.contains('mobile-mode');
@@ -2450,7 +2568,10 @@
         // ============================================================
         //  ATALHOS E EVENTOS DE TECLADO
         // ============================================================
+        let keyboardShortcutsStarted = false;
         function setupKeyboardShortcuts() {
+            if (keyboardShortcutsStarted) return;
+            keyboardShortcutsStarted = true;
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'F1') {
                     e.preventDefault();
@@ -2465,6 +2586,9 @@
                         document.getElementById('pdv-search').focus();
                     }
                 }
+                if (e.key === 'F3') { e.preventDefault(); document.getElementById('cash-received')?.focus(); }
+                if (e.key === 'F4') { e.preventDefault(); finalizeSale(); }
+                if (e.key === 'F10') { e.preventDefault(); toggleFullscreen(); }
                 if (e.ctrlKey && e.key === 'p') {
                     if (!document.getElementById('modal-receipt').classList.contains('hidden')) {
                         e.preventDefault();
@@ -2482,8 +2606,21 @@
         window.addEventListener('offline', () => setSyncStatus('Sem ligação', 'error'));
 
         document.addEventListener('DOMContentLoaded', () => {
-            initLogin();
+            window.doLogin = doLogin;
+            initLogin().catch(error => {
+                console.error('Falha ao iniciar o login:', error);
+                const loginError = document.getElementById('login-error');
+                if (loginError) {
+                    loginError.textContent = 'Não foi possível iniciar o login. Recarregue a página.';
+                    loginError.style.display = 'block';
+                }
+            });
             
+            const loginButton = document.querySelector('#login-overlay button');
+            loginButton?.addEventListener('click', (event) => {
+                event.preventDefault();
+                doLogin();
+            });
             document.getElementById('login-password')?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
             document.getElementById('login-username')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('login-password').focus(); });
             document.getElementById('operator-name-input')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmOperatorName(); });
