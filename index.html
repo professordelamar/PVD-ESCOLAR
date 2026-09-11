@@ -707,7 +707,7 @@
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 class="text-2xl font-extrabold text-slate-800">Gerenciador de Produtos</h2>
-                    <p class="text-slate-500 text-sm">Adicione novos itens ao cardápio, altere preços, fotos e estoque na nuvem.</p>
+                    <p class="text-slate-500 text-sm">Adicione novos itens ao cardápio, altere preços, fotos e estoque na nuvem. Use as setas para definir a ordem padrão do menu para todos.</p>
                 </div>
                 <div class="flex items-center space-x-3">
                     <button onclick="openProductModal()" class="bg-blue-600 text-white font-bold px-4 py-2.5 rounded-lg text-sm flex items-center space-x-2">
@@ -728,7 +728,7 @@
                     <table class="w-full text-left text-sm text-slate-600">
                         <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500">
                             <tr>
-                                <th class="p-3.5">Imagem</th><th class="p-3.5">Nome</th><th class="p-3.5">Categoria</th>
+                                <th class="p-3.5">Ordem</th><th class="p-3.5">Imagem</th><th class="p-3.5">Nome</th><th class="p-3.5">Categoria</th>
                                 <th class="p-3.5 text-right">Preço</th><th class="p-3.5 text-center">Estoque</th>
                                 <th class="p-3.5 text-center">Status</th><th class="p-3.5 text-center">Ações</th>
                             </tr>
@@ -803,7 +803,7 @@
     </main>
 
     <footer class="footer">
-        <span>Desenvolvido por <strong>Delamar Jr</strong> © 2026 - Etapa 2 | Conectado ao Firebase Cloud</span>
+        <span>Desenvolvido por <strong>Delamar Jr</strong> © 2026 - Etapa 2 | Ordem padrão do menu | Conectado ao Firebase Cloud</span>
     </footer>
 
     <!-- MODAIS -->
@@ -1126,6 +1126,7 @@
             db.collection("produtos").onSnapshot(snapshot => {
                 products = [];
                 snapshot.forEach(doc => products.push({ firestoreId: doc.id, ...doc.data() }));
+                products.sort(compareProducts);
                 renderCategoryPills();
                 renderPDVProducts();
                 renderAdminProducts();
@@ -1884,12 +1885,50 @@
         // ============================================================
         //  ADMINISTRAÇÃO DE PRODUTOS NO FIREBASE
         // ============================================================
+        function compareProducts(a, b) {
+            const ao = Number.isFinite(Number(a.sortOrder)) ? Number(a.sortOrder) : 1000000000;
+            const bo = Number.isFinite(Number(b.sortOrder)) ? Number(b.sortOrder) : 1000000000;
+            if (ao !== bo) return ao - bo;
+            return String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR');
+        }
+
+        function productPosition(docId) {
+            return products.findIndex(product => product.firestoreId === docId);
+        }
+
+        async function moveProduct(docId, direction) {
+            if (currentUserRole !== 'master') return;
+            const index = productPosition(docId);
+            const target = index + Number(direction);
+            if (index < 0 || target < 0 || target >= products.length) return;
+            const ordered = [...products];
+            [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
+            try {
+                const batch = db.batch();
+                ordered.forEach((product, position) => {
+                    batch.update(db.collection('produtos').doc(product.firestoreId), { sortOrder: position });
+                });
+                await batch.commit();
+                showToast('✅ Ordem do menu salva para todos.');
+            } catch (error) {
+                console.error('Falha ao salvar ordem dos produtos:', error);
+                playError();
+                showToast('Não foi possível salvar a ordem dos produtos.');
+            }
+        }
+
         function renderAdminProducts() {
             const search = document.getElementById('admin-product-search').value.toLowerCase().trim();
             const filtered = products.filter(p => String(p.name || '').toLowerCase().includes(search) || String(p.category || '').toLowerCase().includes(search));
             document.getElementById('admin-product-count').textContent = `${filtered.length} de ${products.length} produto(s)`;
             document.getElementById('admin-products-table').innerHTML = filtered.length ? filtered.map(p => `
                 <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3.5 text-center">
+                        <div class="flex flex-col items-center gap-1">
+                            <button type="button" onclick='moveProduct(${jsArg(p.firestoreId)}, -1)' ${productPosition(p.firestoreId) === 0 ? 'disabled' : ''} class="text-blue-600 disabled:text-slate-300" title="Mover para cima">▲</button>
+                            <button type="button" onclick='moveProduct(${jsArg(p.firestoreId)}, 1)' ${productPosition(p.firestoreId) === products.length - 1 ? 'disabled' : ''} class="text-blue-600 disabled:text-slate-300" title="Mover para baixo">▼</button>
+                        </div>
+                    </td>
                     <td class="p-3.5"><img src="${escapeHtml(safeImageUrl(p.image))}" alt="${escapeHtml(p.name)}" loading="lazy" class="w-10 h-10 object-cover rounded-lg border"></td>
                     <td class="p-3.5 font-bold text-slate-800 text-sm">${escapeHtml(p.name)}</td>
                     <td class="p-3.5 text-xs text-slate-600"><span class="bg-slate-100 border px-2.5 py-1 rounded-md font-medium">${escapeHtml(p.category)}</span></td>
@@ -1901,7 +1940,7 @@
                         <button type="button" onclick='deleteProduct(${jsArg(p.firestoreId)})' class="text-rose-600 font-semibold text-xs">Excluir</button>
                     </td>
                 </tr>
-            `).join('') : `<tr><td colspan="7" class="p-10 text-center text-slate-400">Nenhum produto encontrado.</td></tr>`;
+            `).join('') : `<tr><td colspan="8" class="p-10 text-center text-slate-400">Nenhum produto encontrado.</td></tr>`;
         }
 
         function openProductModal(docId = null) {
@@ -1940,6 +1979,7 @@
             const payload = {
                 id: docId ? products.find(p => p.firestoreId === docId).id : Date.now(),
                 name, category, price, stock: stockNum,
+                sortOrder: docId ? (products.find(p => p.firestoreId === docId).sortOrder ?? products.length) : products.length,
                 image: image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&q=80'
             };
 
@@ -1966,7 +2006,7 @@
                 for (const p of DEFAULT_PRODUCTS) {
                     const existing = await db.collection('produtos').where('id', '==', p.id).limit(1).get();
                     if (existing.empty) {
-                        await db.collection('produtos').add(p);
+                        await db.collection('produtos').add({ ...p, sortOrder: p.id });
                         added += 1;
                     }
                 }
