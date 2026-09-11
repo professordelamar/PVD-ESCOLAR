@@ -353,6 +353,31 @@
         .mobile-mode.tech-app #view-pdv > div:nth-child(2) > div:last-child { max-height: none !important; overflow: visible !important; }
     </style>
 
+
+    <style id="final-mobile-navigation-fix">
+        /* Rodapé no final do documento, nunca sobre o catálogo. */
+        .footer { flex-shrink: 0 !important; position: relative !important; z-index: 3; }
+        @media (max-width: 1023px) {
+            body.tech-app { display: block !important; min-height: 100vh !important; height: auto !important; overflow-x: hidden !important; overflow-y: auto !important; }
+            body.tech-app > header { position: relative !important; }
+            body.tech-app > main#main-content { height: auto !important; min-height: 0 !important; overflow: visible !important; }
+            body.tech-app > footer.footer { display: block !important; width: 100% !important; clear: both !important; margin-top: 0 !important; }
+            body.tech-app #view-pdv,
+            body.tech-app #view-relatorios,
+            body.tech-app #view-produtos,
+            body.tech-app #view-fiados,
+            body.tech-app #view-turnos { height: auto !important; min-height: 0 !important; }
+            body.tech-app header nav,
+            body.mobile-mode header nav { width: 100% !important; max-width: 100% !important; flex-wrap: nowrap !important; overflow-x: auto !important; overflow-y: hidden !important; justify-content: flex-start !important; scrollbar-width: thin; }
+            body.tech-app header nav .tab-btn,
+            body.mobile-mode header nav .tab-btn { flex: 0 0 auto !important; white-space: nowrap !important; }
+            body.tech-app header > div:last-child { width: 100% !important; margin-left: 0 !important; overflow-x: auto !important; }
+        }
+        body.mobile-mode { display: block !important; height: auto !important; min-height: 100vh !important; overflow-y: auto !important; }
+        body.mobile-mode > main#main-content { height: auto !important; overflow: visible !important; }
+        body.mobile-mode > footer.footer { position: relative !important; display: block !important; margin-top: 0 !important; }
+    </style>
+
 </head>
 <body class="tech-app h-screen flex flex-col overflow-hidden text-slate-800">
 
@@ -885,7 +910,7 @@
     </main>
 
     <footer class="footer">
-        <span>Desenvolvido por <strong>Delamar Jr</strong> © 2026 - Etapa 2 | Ordem padrão do menu | Conectado ao Firebase Cloud</span>
+        <span>Desenvolvido por <strong>Delamar Jr</strong> © 2026</span>
     </footer>
 
     <!-- MODAIS -->
@@ -1537,17 +1562,20 @@
                 showToast('Não foi possível conectar ao Firebase. Recarregue a página e tente novamente.');
                 return;
             }
-            setupFirebaseListeners();
+            // Monta primeiro a interface do caixa; a sincronização fica em segundo plano.
+            // Assim o botão de finalizar e as formas de pagamento aparecem sem esperar o Firestore.
             loadThemeFromLocalStorage();
             updateClock();
             if (!clockIntervalId) clockIntervalId = setInterval(updateClock, 1000);
-            setSyncStatus('A sincronizar…', 'warn');
+            setSyncStatus('Conectando…', 'warn');
             setPaymentMethod('pix');
             lucide.createIcons();
             applyPermissions();
             switchTab('pdv');
+            renderPDVProducts();
             updateEyeButton();
             setupKeyboardShortcuts();
+            setTimeout(setupFirebaseListeners, 0);
 
             if (localStorage.getItem('pdv_escola_locked') === 'true') {
                 lockSystem();
