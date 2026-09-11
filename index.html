@@ -645,6 +645,14 @@
                         </div>
                     </div>
 
+                    <div id="card-type-box" class="hidden bg-indigo-50 border border-indigo-200 p-2.5 rounded-xl space-y-2">
+                        <span class="text-xs font-bold text-indigo-900 uppercase">Tipo do cartão</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="setCardType('debito')" id="card-type-debito" class="card-type-btn p-2 border-2 border-indigo-200 bg-white rounded-lg text-xs font-bold text-indigo-800">Débito</button>
+                            <button type="button" onclick="setCardType('credito')" id="card-type-credito" class="card-type-btn p-2 border-2 border-indigo-200 bg-white rounded-lg text-xs font-bold text-indigo-800">Crédito</button>
+                        </div>
+                    </div>
+
                     <!-- Dados Fiado -->
                     <div id="fiado-fields-box" class="hidden bg-rose-50 border border-rose-200 p-2.5 rounded-xl space-y-2">
                         <div class="flex items-center justify-between">
@@ -750,6 +758,11 @@
                         <p class="text-xs font-bold text-slate-400 uppercase">Cartão</p>
                         <h3 id="kpi-card-total" class="text-2xl font-black text-indigo-600 mt-1 value-hidden">R$ 0,00</h3>
                         <p id="kpi-card-percent" class="text-xs text-slate-500 mt-1">0%</p>
+                        <div class="mt-1 text-[10px] leading-4 text-slate-500">
+                            <span class="font-semibold">Débito:</span> <span id="kpi-card-debit-total">R$ 0,00</span>
+                            <span class="mx-1">·</span>
+                            <span class="font-semibold">Crédito:</span> <span id="kpi-card-credit-total">R$ 0,00</span>
+                        </div>
                     </div>
                     <div class="bg-indigo-50 p-3 rounded-xl text-indigo-600"><i data-lucide="credit-card" class="w-6 h-6"></i></div>
                 </div>
@@ -1150,6 +1163,7 @@
         let cart = [];
         let selectedCategory = 'Todos';
         let selectedPaymentMethod = 'pix';
+        let selectedCardType = 'debito';
         let valuesVisible = true;
         let darkMode = false;
         let schoolName = '';
@@ -1207,6 +1221,11 @@
         }
 
         function isActiveSale(sale) { return sale?.status !== 'cancelled'; }
+
+        function formatPaymentMethod(sale) {
+            if (sale?.paymentMethod === 'cartao') return `CARTÃO - ${(sale.cardType || 'NÃO INFORMADO').toUpperCase()}`;
+            return String(sale?.paymentMethod || '').toUpperCase();
+        }
 
         function setSyncStatus(message, state = 'ok') {
             const el = document.getElementById('sync-status');
@@ -1941,9 +1960,19 @@
             selectedPaymentMethod = method;
             document.querySelectorAll('.payment-btn').forEach(b => b.classList.remove('selected'));
             document.getElementById(`pay-btn-${method}`).classList.add('selected');
+            document.getElementById('card-type-box').classList.toggle('hidden', method !== 'cartao');
             document.getElementById('fiado-fields-box').classList.toggle('hidden', method !== 'fiado');
             document.getElementById('cash-calculator-box').classList.toggle('hidden', method !== 'dinheiro');
+            if (method === 'cartao') setCardType(selectedCardType);
             renderCart();
+        }
+
+        function setCardType(type) {
+            if (!['debito', 'credito'].includes(type)) return;
+            selectedCardType = type;
+            document.querySelectorAll('.card-type-btn').forEach(button => button.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600'));
+            const selected = document.getElementById(`card-type-${type}`);
+            if (selected) selected.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
         }
 
         function calculateChange() {
@@ -2013,6 +2042,7 @@
                 items: cart.map(item => ({ ...item })),
                 total,
                 paymentMethod: selectedPaymentMethod,
+                cardType: selectedPaymentMethod === 'cartao' ? selectedCardType : null,
                 cashReceived: received,
                 changeGiven: change,
                 discount,
@@ -2049,7 +2079,7 @@
         function showReceiptModal(sale) {
             document.getElementById('receipt-id').textContent = `#${sale.id}`;
             document.getElementById('receipt-datetime').textContent = sale.datetime;
-            document.getElementById('receipt-payment').textContent = sale.paymentMethod.toUpperCase();
+            document.getElementById('receipt-payment').textContent = sale.paymentMethod === 'cartao' ? `CARTÃO - ${(sale.cardType || 'não informado').toUpperCase()}` : sale.paymentMethod.toUpperCase();
             document.getElementById('receipt-total').textContent = formatMoney(sale.total);
             document.getElementById('receipt-operator').textContent = sale.operator || '-';
             const receiptStatus = document.getElementById('receipt-sync-status');
@@ -2305,12 +2335,16 @@
             const totalSum = activeSales.reduce((s, v) => s + Number(v.total || 0), 0);
             const methods = ['pix', 'cartao', 'dinheiro', 'fiado'];
             const methodTotals = Object.fromEntries(methods.map(method => [method, activeSales.filter(s => s.paymentMethod === method).reduce((sum, sale) => sum + Number(sale.total || 0), 0)]));
+            const cardDebitTotal = activeSales.filter(s => s.paymentMethod === 'cartao' && s.cardType === 'debito').reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+            const cardCreditTotal = activeSales.filter(s => s.paymentMethod === 'cartao' && s.cardType === 'credito').reduce((sum, sale) => sum + Number(sale.total || 0), 0);
             const percent = value => totalSum ? `${((value / totalSum) * 100).toFixed(1).replace('.', ',')}%` : '0%';
 
             document.getElementById('kpi-total-sales').textContent = formatMoney(totalSum);
             document.getElementById('kpi-sales-count').textContent = `${activeSales.length} venda(s) activa(s)`;
             document.getElementById('kpi-pix-total').textContent = formatMoney(methodTotals.pix);
             document.getElementById('kpi-card-total').textContent = formatMoney(methodTotals.cartao);
+            document.getElementById('kpi-card-debit-total').textContent = formatMoney(cardDebitTotal);
+            document.getElementById('kpi-card-credit-total').textContent = formatMoney(cardCreditTotal);
             document.getElementById('kpi-cash-total').textContent = formatMoney(methodTotals.dinheiro);
             document.getElementById('kpi-fiado-total').textContent = formatMoney(methodTotals.fiado);
             document.getElementById('kpi-pix-percent').textContent = percent(methodTotals.pix);
@@ -2351,7 +2385,7 @@
                     <td class="p-3 font-mono font-bold text-xs">#${escapeHtml(s.id)}</td>
                     <td class="p-3 text-xs whitespace-nowrap">${escapeHtml(s.datetime)}</td>
                     <td class="p-3 text-xs max-w-xs truncate">${(s.items || []).map(i => `${Number(i.quantity)}x ${escapeHtml(i.name)}`).join(', ')}</td>
-                    <td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-100">${escapeHtml(s.paymentMethod)}</span></td>
+                    <td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-100">${escapeHtml(formatPaymentMethod(s))}</span></td>
                     <td class="p-3 text-right font-extrabold text-sm">${formatMoney(s.total)}</td>
                     <td class="p-3 text-center text-xs">${escapeHtml(s.operator || '-')}</td>
                     <td class="p-3 text-center">${s.status === 'cancelled' ? '<span class="status-pill cancelled">Estornada</span>' : `<button type="button" onclick='requestSaleReversal(${jsArg(s.firestoreId)})' class="text-rose-500 text-xs font-semibold">Estornar</button>`}</td>
@@ -2521,7 +2555,7 @@
             if (currentUserRole !== 'master') return;
             if (!salesHistory.length) return alert('Não há vendas para exportar.');
             const salesData = salesHistory.map(s => ({
-                'ID': s.id, 'Data/Hora': s.datetime, 'Pagamento': s.paymentMethod.toUpperCase(),
+                'ID': s.id, 'Data/Hora': s.datetime, 'Pagamento': formatPaymentMethod(s),
                 'Total (R$)': s.total, 'Recebido (R$)': s.cashReceived || s.total,
                 'Troco (R$)': s.changeGiven || 0, 'Desconto (R$)': s.discount || 0,
                 'Qtd Itens': s.items.reduce((sum, i) => sum + i.quantity, 0), 'Vendedor': s.operator || ''
@@ -2529,7 +2563,7 @@
             const itemsData = [];
             salesHistory.forEach(s => {
                 s.items.forEach(i => {
-                    itemsData.push({ 'ID Venda': s.id, 'Data': s.datetime, 'Produto': i.name, 'Preço Unitário': i.price, 'Quantidade': i.quantity, 'Subtotal': i.price * i.quantity, 'Pagamento': s.paymentMethod.toUpperCase(), 'Vendedor': s.operator || '' });
+                    itemsData.push({ 'ID Venda': s.id, 'Data': s.datetime, 'Produto': i.name, 'Preço Unitário': i.price, 'Quantidade': i.quantity, 'Subtotal': i.price * i.quantity, 'Pagamento': formatPaymentMethod(s), 'Vendedor': s.operator || '' });
                 });
             });
             const wb = XLSX.utils.book_new();
