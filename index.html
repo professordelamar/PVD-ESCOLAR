@@ -989,7 +989,7 @@
         <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden modal-content">
             <div class="bg-emerald-600 text-white p-5 text-center">
                 <h3 class="font-extrabold text-xl">Venda Concluída!</h3>
-                <p class="text-xs text-emerald-100">Sincronizada na nuvem</p>
+                <p id="receipt-sync-status" class="text-xs text-emerald-100">Enviando para a nuvem…</p>
             </div>
             <div class="p-5 space-y-4">
                 <div class="bg-slate-50 p-3.5 rounded-xl border text-xs space-y-2">
@@ -1280,6 +1280,14 @@
             updatePendingSyncStatus();
         }
 
+        function applyOptimisticStock(saleRecord) {
+            (saleRecord.items || []).forEach(item => {
+                const product = products.find(p => p.firestoreId === item.firestoreId);
+                if (product && product.stock !== null && product.stock !== undefined) product.stock = Math.max(0, Number(product.stock) - Number(item.quantity));
+            });
+            renderPDVProducts();
+        }
+
         async function syncPendingSales() {
             if (isSyncingPendingSales || !firebaseReady || !db || !navigator.onLine) return;
             const queue = getPendingSales();
@@ -1292,6 +1300,8 @@
                     const firestoreId = await writeSaleToFirebase(sale);
                     sale.firestoreId = firestoreId;
                     lastSale = sale;
+                    const receiptStatus = document.getElementById('receipt-sync-status');
+                    if (receiptStatus && document.getElementById('receipt-id').textContent === `#${sale.id}`) receiptStatus.textContent = 'Sincronizada na nuvem';
                 } catch (error) {
                     console.error('Venda mantida na fila:', error);
                     remaining.push(sale);
@@ -2012,49 +2022,25 @@
                 operator: getDisplayName()
             };
 
-            try {
-                saleRecord.localId = `local_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-                // Se não houver rede, a venda é confirmada localmente e enviada depois.
-                // Com rede, tenta gravar agora; em falha de rede, entra automaticamente na fila.
-                if (!navigator.onLine) throw Object.assign(new Error('Sem conexão: venda colocada na fila local.'), { code: 'offline' });
-                const firestoreId = await writeSaleToFirebase(saleRecord);
-                saleRecord.firestoreId = firestoreId;
-                lastSale = saleRecord;
-                showReceiptModal(saleRecord);
-                playDing();
-                showToast('Venda sincronizada com sucesso.');
-                setSyncStatus('Nuvem activa', 'ok');
-                cart = [];
-                renderCart();
-                document.getElementById('cash-received').value = '';
-                document.getElementById('cash-discount').value = '';
-                document.getElementById('fiado-name').value = '';
-                document.getElementById('fiado-phone').value = '';
-                document.getElementById('fiado-obs').value = '';
-            } catch (error) {
-                if (isNetworkError(error)) {
-                    enqueuePendingSale(saleRecord);
-                    lastSale = saleRecord;
-                    showReceiptModal(saleRecord);
-                    playDing();
-                    showToast('Venda salva neste aparelho; será enviada automaticamente.');
-                    cart = [];
-                    renderCart();
-                    document.getElementById('cash-received').value = '';
-                    document.getElementById('cash-discount').value = '';
-                    document.getElementById('fiado-name').value = '';
-                    document.getElementById('fiado-phone').value = '';
-                    document.getElementById('fiado-obs').value = '';
-                } else {
-                    console.error('Falha ao finalizar venda:', error);
-                    playError();
-                    setSyncStatus('Falha ao gravar', 'error');
-                    showToast(error.message || 'A venda não foi gravada. Nenhuma alteração parcial foi aplicada.');
-                }
-            } finally {
-                isFinalizingSale = false;
-                setCheckoutBusy(false);
-            }
+            saleRecord.localId = `local_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            // Confirma a venda localmente sem esperar a rede. O envio ocorre em segundo plano.
+            enqueuePendingSale(saleRecord);
+            applyOptimisticStock(saleRecord);
+            lastSale = saleRecord;
+            showReceiptModal(saleRecord);
+            playDing();
+            showToast('Venda concluída. Enviando para a nuvem…');
+            cart = [];
+            renderCart();
+            document.getElementById('cash-received').value = '';
+            document.getElementById('cash-discount').value = '';
+            document.getElementById('fiado-name').value = '';
+            document.getElementById('fiado-phone').value = '';
+            document.getElementById('fiado-obs').value = '';
+            isFinalizingSale = false;
+            setCheckoutBusy(false);
+            // Não usar await aqui: o usuário pode iniciar a próxima venda imediatamente.
+            setTimeout(syncPendingSales, 0);
         }
 
         // ============================================================
@@ -2066,6 +2052,8 @@
             document.getElementById('receipt-payment').textContent = sale.paymentMethod.toUpperCase();
             document.getElementById('receipt-total').textContent = formatMoney(sale.total);
             document.getElementById('receipt-operator').textContent = sale.operator || '-';
+            const receiptStatus = document.getElementById('receipt-sync-status');
+            if (receiptStatus) receiptStatus.textContent = sale.firestoreId ? 'Sincronizada na nuvem' : 'Enviando para a nuvem…';
             document.getElementById('receipt-items-list').innerHTML = sale.items.map(i => `<div class="flex justify-between gap-2"><span>${Number(i.quantity)}x ${escapeHtml(i.name)}</span><span>${formatMoney(i.price * i.quantity)}</span></div>`).join('');
             
             const pixContainer = document.getElementById('receipt-pix-container');
