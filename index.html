@@ -549,6 +549,10 @@
                 <i data-lucide="clock" class="w-4 h-4"></i>
                 <span>Turnos</span>
             </button>
+            <button onclick="switchTab('estornos')" id="tab-btn-estornos" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-sm transition text-slate-300 hover:text-white" style="display: none;">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                <span>Estornar item</span>
+            </button>
         </nav>
 
         <!-- Informações à Direita -->
@@ -890,7 +894,32 @@
             </div>
         </div>
 
-        <!-- ABA 5: TURNOS (MASTER) -->
+        <!-- ABA 5: ESTORNO PARCIAL DE ITEM (MASTER) -->
+        <div id="view-estornos" class="hidden h-full overflow-y-auto p-6 space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-extrabold text-slate-800">Estornar item vendido</h2>
+                    <p class="text-slate-500 text-sm">Procure um produto nas vendas e estorne uma unidade por vez, sem cancelar o pedido inteiro.</p>
+                </div>
+                <span id="item-reversal-count" class="text-xs font-bold bg-slate-100 text-slate-600 px-3 py-2 rounded-lg">0 itens encontrados</span>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b flex flex-col sm:flex-row gap-3 items-center justify-between">
+                    <input type="search" id="item-reversal-search" oninput="renderItemReversals()" placeholder="Buscar item vendido..." class="w-full sm:w-96 px-3 py-2 border rounded-lg text-sm">
+                    <span class="text-xs text-slate-500">O estorno exige a senha do master.</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500"><tr>
+                            <th class="p-3.5">Item</th><th class="p-3.5">Venda</th><th class="p-3.5">Data</th><th class="p-3.5 text-center">Qtd.</th><th class="p-3.5 text-right">Valor unit.</th><th class="p-3.5 text-center">Ação</th>
+                        </tr></thead>
+                        <tbody id="item-reversal-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 6: TURNOS (MASTER) -->
         <div id="view-turnos" class="hidden h-full overflow-y-auto p-6 space-y-6">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -1724,9 +1753,12 @@
 
         function applyPermissions() {
             const isMaster = currentUserRole === 'master';
-            ['tab-btn-relatorios', 'tab-btn-produtos', 'tab-btn-turnos', 'btn-export-excel', 'btn-clear-history', 'btn-export-backup', 'btn-import-backup', 'btn-settings'].forEach(id => {
+            ['tab-btn-relatorios', 'tab-btn-produtos', 'tab-btn-turnos', 'tab-btn-estornos', 'btn-export-excel', 'btn-clear-history', 'btn-export-backup', 'btn-import-backup', 'btn-settings'].forEach(id => {
                 const el = document.getElementById(id);
-                if (el) el.style.display = isMaster ? '' : 'none';
+                if (el) {
+                    el.style.display = isMaster ? 'flex' : 'none';
+                    el.setAttribute('aria-hidden', isMaster ? 'false' : 'true');
+                }
             });
         }
 
@@ -1775,10 +1807,11 @@
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
-            ['view-pdv', 'view-relatorios', 'view-produtos', 'view-fiados', 'view-turnos'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['view-pdv', 'view-relatorios', 'view-produtos', 'view-fiados', 'view-estornos', 'view-turnos'].forEach(id => document.getElementById(id).classList.add('hidden'));
             document.getElementById(`tab-btn-${tab}`).classList.add('active-tab');
             document.getElementById(`view-${tab}`).classList.remove('hidden');
             if (tab === 'turnos') renderShifts();
+            if (tab === 'estornos') renderItemReversals();
             if (tab === 'relatorios') { renderReports(); renderChart(getDailyData(filteredSales)); }
             if (tab === 'produtos') renderAdminProducts();
             if (tab === 'fiados') renderFiados();
@@ -2394,6 +2427,72 @@
             `).join('') : `<tr><td colspan="7" class="p-10 text-center text-slate-400">Nenhuma venda no período seleccionado.</td></tr>`;
         }
 
+        function renderItemReversals() {
+            if (currentUserRole !== 'master') return;
+            const query = String(document.getElementById('item-reversal-search')?.value || '').trim().toLowerCase();
+            const rows = [];
+            salesHistory.filter(isActiveSale).forEach(sale => (sale.items || []).forEach((item, itemIndex) => {
+                if (query && !String(item.name || '').toLowerCase().includes(query)) return;
+                const quantity = Number(item.quantity || 0);
+                if (quantity <= 0) return;
+                rows.push({ sale, item, itemIndex, quantity });
+            }));
+            const count = document.getElementById('item-reversal-count');
+            const body = document.getElementById('item-reversal-table-body');
+            if (!count || !body) return;
+            count.textContent = `${rows.length} item(ns) encontrado(s)`;
+            body.innerHTML = rows.length ? rows.map(row => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 font-bold">${escapeHtml(row.item.name)}</td>
+                    <td class="p-3 font-mono text-xs">#${escapeHtml(row.sale.id)}</td>
+                    <td class="p-3 text-xs whitespace-nowrap">${escapeHtml(row.sale.datetime)}</td>
+                    <td class="p-3 text-center font-bold">${row.quantity}</td>
+                    <td class="p-3 text-right font-bold">${formatMoney(row.item.price)}</td>
+                    <td class="p-3 text-center"><button type="button" onclick='requestItemReversal(${jsArg(row.sale.firestoreId)}, ${row.itemIndex})' class="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-bold hover:bg-rose-700">Estornar 1 un.</button></td>
+                </tr>`).join('') : `<tr><td colspan="6" class="p-10 text-center text-slate-400">Nenhum item vendido encontrado.</td></tr>`;
+        }
+
+        function requestItemReversal(saleDocId, itemIndex) {
+            if (currentUserRole !== 'master') return alert('Apenas o master pode estornar item.');
+            window._pendingAction = 'reverseSaleItem';
+            window._pendingSaleId = saleDocId;
+            window._pendingSaleItemIndex = Number(itemIndex);
+            document.getElementById('password-modal-message').textContent = 'Digite a senha mestre para estornar 1 unidade deste item';
+            document.getElementById('modal-password').classList.remove('hidden');
+            document.getElementById('master-password-input').value = '';
+            document.getElementById('master-password-input').focus();
+        }
+
+        async function reverseSaleItem(saleDocId, itemIndex) {
+            const saleRef = db.collection('vendas').doc(saleDocId);
+            await db.runTransaction(async transaction => {
+                const saleSnapshot = await transaction.get(saleRef);
+                if (!saleSnapshot.exists) throw new Error('Venda não encontrada.');
+                const sale = saleSnapshot.data();
+                if (sale.status === 'cancelled') throw new Error('A venda já foi estornada.');
+                const items = Array.isArray(sale.items) ? sale.items.map(item => ({ ...item })) : [];
+                const item = items[itemIndex];
+                if (!item || Number(item.quantity || 0) < 1) throw new Error('Item não encontrado ou já estornado.');
+                if (item.firestoreId) {
+                    const productRef = db.collection('produtos').doc(item.firestoreId);
+                    const productSnapshot = await transaction.get(productRef);
+                    if (productSnapshot.exists) {
+                        const stock = productSnapshot.data().stock;
+                        if (stock !== null && stock !== undefined) transaction.update(productRef, { stock: Number(stock) + 1 });
+                    }
+                }
+                item.quantity = Number(item.quantity) - 1;
+                const updatedItems = items.filter(entry => Number(entry.quantity || 0) > 0);
+                const newTotal = Math.max(0, Number(sale.total || 0) - Number(item.price || 0));
+                transaction.update(saleRef, { items: updatedItems, total: Number(newTotal.toFixed(2)), itemReversalAt: Date.now(), itemReversalBy: getDisplayName(), status: updatedItems.length ? 'completed' : 'cancelled' });
+            });
+            const saleSnap = await saleRef.get();
+            const updatedSale = saleSnap.data();
+            if (updatedSale?.fiadoDocId) await db.collection('fiados').doc(updatedSale.fiadoDocId).update({ total: updatedSale.total, status: updatedSale.status === 'cancelled' ? 'cancelled' : 'open' });
+            renderItemReversals();
+            showToast('Item estornado e estoque reposto.');
+        }
+
         function applyDateFilter() {
             const startValue = document.getElementById('filter-date-start').value;
             const endValue = document.getElementById('filter-date-end').value;
@@ -2761,6 +2860,11 @@
                     closeEditFiadoModal();
                     showToast('✅ Fiado atualizado!');
                 });
+            } else if (action === 'reverseSaleItem') {
+                reverseSaleItem(window._pendingSaleId, window._pendingSaleItemIndex).catch(error => {
+                    console.error('Falha no estorno do item:', error);
+                    showToast(error.message || 'Não foi possível estornar o item.');
+                });
             } else if (action === 'reverseSaleById' || action === 'cancelSale') {
                 const saleId = action === 'cancelSale' ? lastSale?.firestoreId : window._pendingSaleId;
                 db.collection('vendas').doc(saleId).get().then(snapshot => {
@@ -2828,6 +2932,8 @@
         function toggleMobileMode() {
             document.body.classList.toggle('mobile-mode');
             const isMobile = document.body.classList.contains('mobile-mode');
+            // O modo celular só altera o layout; nunca deve remover as permissões do master.
+            applyPermissions();
             
             const btn = document.querySelector('[title="Modo Celular/Tablet"] i');
             if (btn) {
