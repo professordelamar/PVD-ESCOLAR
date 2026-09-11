@@ -381,6 +381,17 @@
         body.mobile-mode header nav .tab-btn { min-width: 0 !important; justify-content: center !important; display: flex !important; }
         body.mobile-mode header nav .tab-btn[aria-hidden="true"] { display: none !important; }
         body.mobile-mode header nav .tab-btn[aria-hidden="false"] { display: flex !important; }
+        /* No celular, a navegação continua no cabeçalho e cada aba ocupa sua própria tela. */
+        body.mobile-mode header > div:first-child { order: 0 !important; width: auto !important; }
+        body.mobile-mode header nav { order: 1 !important; position: sticky; top: 0; z-index: 5; }
+        body.mobile-mode header > div:last-child { order: 2 !important; }
+        body.mobile-mode #view-pdv.hidden { display: none !important; }
+        body.mobile-mode #view-pdv:not(.hidden) { display: flex !important; }
+        body.mobile-mode #view-relatorios.hidden,
+        body.mobile-mode #view-produtos.hidden,
+        body.mobile-mode #view-fiados.hidden,
+        body.mobile-mode #view-turnos.hidden,
+        body.mobile-mode #view-estornos.hidden { display: none !important; }
         .card-type-btn.selected { background-color: #2563eb !important; color: #ffffff !important; border-color: #2563eb !important; }
     </style>
 
