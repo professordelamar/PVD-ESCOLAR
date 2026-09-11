@@ -1167,6 +1167,10 @@
 
         let isFinalizingSale = false;
         let firebaseListenersStarted = false;
+        let pendingSyncIntervalId = null;
+        let isSyncingPendingSales = false;
+        const PENDING_SALES_KEY = 'pdv_escola_pending_sales_v1';
+        const PRODUCTS_CACHE_KEY = 'pdv_escola_products_cache_v1';
         let clockIntervalId = null;
         let loginAttempts = 0;
         let loginLockUntil = 0;
@@ -1213,6 +1217,100 @@
             el.classList.add(state === 'error' ? 'sync-error' : state === 'warn' ? 'sync-warn' : 'sync-ok');
         }
 
+        function getPendingSales() {
+            try { return JSON.parse(localStorage.getItem(PENDING_SALES_KEY) || '[]'); } catch (_) { return []; }
+        }
+
+        function savePendingSales(queue) {
+            localStorage.setItem(PENDING_SALES_KEY, JSON.stringify(queue));
+        }
+
+        function updatePendingSyncStatus() {
+            const count = getPendingSales().length;
+            if (count) setSyncStatus(`${count} venda(s) pendente(s)`, 'warn');
+            else if (navigator.onLine) setSyncStatus('Nuvem activa', 'ok');
+        }
+
+        function loadProductsCache() {
+            try {
+                const cached = JSON.parse(localStorage.getItem(PRODUCTS_CACHE_KEY) || '[]');
+                if (Array.isArray(cached) && cached.length) { products = cached; products.sort(compareProducts); renderCategoryPills(); renderPDVProducts(); }
+            } catch (_) {}
+        }
+
+        async function writeSaleToFirebase(saleRecord) {
+            const saleRef = saleRecord.firestoreId ? db.collection('vendas').doc(saleRecord.firestoreId) : db.collection('vendas').doc(saleRecord.localId || undefined);
+            const fiadoRef = saleRecord.fiado ? db.collection('fiados').doc(saleRecord.fiadoDocId || undefined) : null;
+            await db.runTransaction(async transaction => {
+                const existingSale = await transaction.get(saleRef);
+                if (existingSale.exists) return;
+                const productRefs = (saleRecord.items || []).filter(item => item.firestoreId).map(item => db.collection('produtos').doc(item.firestoreId));
+                const productSnapshots = [];
+                for (const ref of productRefs) productSnapshots.push(await transaction.get(ref));
+                for (let index = 0; index < productRefs.length; index += 1) {
+                    const item = saleRecord.items.filter(entry => entry.firestoreId)[index];
+                    const snapshot = productSnapshots[index];
+                    if (!snapshot.exists) throw new Error(`Produto indisponível: ${item.name}`);
+                    const stock = snapshot.data().stock;
+                    if (stock !== null && stock !== undefined && Number(stock) < Number(item.quantity)) throw new Error(`Stock insuficiente para ${item.name}.`);
+                }
+                for (let index = 0; index < productRefs.length; index += 1) {
+                    const item = saleRecord.items.filter(entry => entry.firestoreId)[index];
+                    const snapshot = productSnapshots[index];
+                    const stock = snapshot.data().stock;
+                    if (stock !== null && stock !== undefined) transaction.update(productRefs[index], { stock: Number(stock) - Number(item.quantity) });
+                }
+                const { firestoreId: _ignoredFirestoreId, localId: _ignoredLocalId, ...saleData } = saleRecord;
+                transaction.set(saleRef, saleData);
+                if (fiadoRef) transaction.set(fiadoRef, { id: saleRecord.id, name: saleRecord.fiado.name, phone: saleRecord.fiado.phone, obs: saleRecord.fiado.obs || '', date: saleRecord.datetime, timestamp: saleRecord.timestamp, total: saleRecord.total, paid: false, saleDocId: saleRef.id, operator: saleRecord.operator });
+            });
+            return saleRef.id;
+        }
+
+        function isNetworkError(error) {
+            const code = String(error?.code || '').toLowerCase();
+            const message = String(error?.message || '').toLowerCase();
+            return !navigator.onLine || ['unavailable','deadline-exceeded','resource-exhausted','aborted'].includes(code) || /network|offline|timeout|timed out|unavailable/.test(message);
+        }
+
+        function enqueuePendingSale(saleRecord) {
+            const queue = getPendingSales();
+            if (!queue.some(item => item.localId === saleRecord.localId)) queue.push(saleRecord);
+            savePendingSales(queue);
+            updatePendingSyncStatus();
+        }
+
+        async function syncPendingSales() {
+            if (isSyncingPendingSales || !firebaseReady || !db || !navigator.onLine) return;
+            const queue = getPendingSales();
+            if (!queue.length) return;
+            isSyncingPendingSales = true;
+            setSyncStatus(`Enviando ${queue.length} venda(s)…`, 'warn');
+            const remaining = [];
+            for (const sale of queue) {
+                try {
+                    const firestoreId = await writeSaleToFirebase(sale);
+                    sale.firestoreId = firestoreId;
+                    lastSale = sale;
+                } catch (error) {
+                    console.error('Venda mantida na fila:', error);
+                    remaining.push(sale);
+                    if (!isNetworkError(error)) showToast(error.message || 'Uma venda pendente precisa ser revisada.');
+                }
+            }
+            savePendingSales(remaining);
+            isSyncingPendingSales = false;
+            updatePendingSyncStatus();
+            if (!remaining.length) showToast('Vendas pendentes sincronizadas.');
+        }
+
+        function startPendingSync() {
+            if (pendingSyncIntervalId) return;
+            pendingSyncIntervalId = setInterval(syncPendingSales, 60000);
+            window.addEventListener('online', syncPendingSales);
+            setTimeout(syncPendingSales, 1500);
+        }
+
         function setCheckoutBusy(busy) {
             const btn = document.getElementById('btn-checkout');
             if (!btn) return;
@@ -1234,6 +1332,7 @@
                 products = [];
                 snapshot.forEach(doc => products.push({ firestoreId: doc.id, ...doc.data() }));
                 products.sort(compareProducts);
+                try { localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(products)); } catch (_) {}
                 renderCategoryPills();
                 renderPDVProducts();
                 if (currentUserRole === 'master' && !document.getElementById('view-produtos').classList.contains('hidden')) renderAdminProducts();
@@ -1575,6 +1674,8 @@
             renderPDVProducts();
             updateEyeButton();
             setupKeyboardShortcuts();
+            loadProductsCache();
+            startPendingSync();
             setTimeout(setupFirebaseListeners, 0);
 
             if (localStorage.getItem('pdv_escola_locked') === 'true') {
@@ -1912,42 +2013,12 @@
             };
 
             try {
-                await db.runTransaction(async transaction => {
-                    const productRefs = cart.filter(item => item.firestoreId).map(item => db.collection('produtos').doc(item.firestoreId));
-                    const productSnapshots = [];
-                    for (const ref of productRefs) productSnapshots.push(await transaction.get(ref));
-
-                    for (let index = 0; index < productRefs.length; index += 1) {
-                        const item = cart.filter(entry => entry.firestoreId)[index];
-                        const snapshot = productSnapshots[index];
-                        if (!snapshot.exists) throw new Error(`Produto indisponível: ${item.name}`);
-                        const stock = snapshot.data().stock;
-                        if (stock !== null && stock !== undefined && Number(stock) < Number(item.quantity)) {
-                            throw new Error(`Stock insuficiente para ${item.name}.`);
-                        }
-                    }
-                    for (let index = 0; index < productRefs.length; index += 1) {
-                        const item = cart.filter(entry => entry.firestoreId)[index];
-                        const snapshot = productSnapshots[index];
-                        const stock = snapshot.data().stock;
-                        if (stock !== null && stock !== undefined) transaction.update(productRefs[index], { stock: Number(stock) - Number(item.quantity) });
-                    }
-                    transaction.set(saleRef, saleRecord);
-                    if (fiadoRef) transaction.set(fiadoRef, {
-                        id: saleRecord.id,
-                        name: fiadoData.name,
-                        phone: fiadoData.phone,
-                        obs: fiadoData.obs || '',
-                        date: saleRecord.datetime,
-                        timestamp: saleRecord.timestamp,
-                        total: saleRecord.total,
-                        paid: false,
-                        saleDocId: saleRef.id,
-                        operator: saleRecord.operator
-                    });
-                });
-
-                saleRecord.firestoreId = saleRef.id;
+                saleRecord.localId = `local_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                // Se não houver rede, a venda é confirmada localmente e enviada depois.
+                // Com rede, tenta gravar agora; em falha de rede, entra automaticamente na fila.
+                if (!navigator.onLine) throw Object.assign(new Error('Sem conexão: venda colocada na fila local.'), { code: 'offline' });
+                const firestoreId = await writeSaleToFirebase(saleRecord);
+                saleRecord.firestoreId = firestoreId;
                 lastSale = saleRecord;
                 showReceiptModal(saleRecord);
                 playDing();
@@ -1961,10 +2032,25 @@
                 document.getElementById('fiado-phone').value = '';
                 document.getElementById('fiado-obs').value = '';
             } catch (error) {
-                console.error('Falha ao finalizar venda:', error);
-                playError();
-                setSyncStatus('Falha ao gravar', 'error');
-                showToast(error.message || 'A venda não foi gravada. Nenhuma alteração parcial foi aplicada.');
+                if (isNetworkError(error)) {
+                    enqueuePendingSale(saleRecord);
+                    lastSale = saleRecord;
+                    showReceiptModal(saleRecord);
+                    playDing();
+                    showToast('Venda salva neste aparelho; será enviada automaticamente.');
+                    cart = [];
+                    renderCart();
+                    document.getElementById('cash-received').value = '';
+                    document.getElementById('cash-discount').value = '';
+                    document.getElementById('fiado-name').value = '';
+                    document.getElementById('fiado-phone').value = '';
+                    document.getElementById('fiado-obs').value = '';
+                } else {
+                    console.error('Falha ao finalizar venda:', error);
+                    playError();
+                    setSyncStatus('Falha ao gravar', 'error');
+                    showToast(error.message || 'A venda não foi gravada. Nenhuma alteração parcial foi aplicada.');
+                }
             } finally {
                 isFinalizingSale = false;
                 setCheckoutBusy(false);
